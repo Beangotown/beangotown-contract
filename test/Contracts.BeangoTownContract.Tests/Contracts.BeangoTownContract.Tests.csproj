@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <RootNamespace>Contracts.BingoTownContract</RootNamespace>
+    <RootNamespace>Contracts.BeangoTownContract</RootNamespace>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
@@ -53,8 +53,8 @@
     <ContractBase Include="..\..\protobuf\acs12.proto">
       <Link>Protobuf\Proto\base\acs12.proto</Link>
     </ContractBase>
-    <ContractStub Include="..\..\protobuf\bingo_town_contract.proto">
-      <Link>Protobuf\Proto\bingo_town_contract.proto</Link>
+    <ContractStub Include="..\..\protobuf\beango_town_contract.proto">
+      <Link>Protobuf\Proto\beango_town_contract.proto</Link>
     </ContractStub>
     <ContractStub Include="..\..\protobuf\token_contract.proto">
       <Link>Protobuf\Proto\token_contract.proto</Link>
@@ -80,7 +80,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\contract\Contracts.BingoTownContract\Contracts.BingoTownContract.csproj" />
+    <ProjectReference Include="..\..\contract\Contracts.BeangoTownContract\Contracts.BeangoTownContract.csproj" />
     <ProjectReference Include="..\..\src\AElf.Boilerplate.TestBase\AElf.Boilerplate.TestBase.csproj" />
   </ItemGroup>
 

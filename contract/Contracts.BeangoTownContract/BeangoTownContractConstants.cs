@@ -1,8 +1,8 @@
 
 
-namespace Contracts.BingoGameContract
+namespace Contracts.BeangoTownContract
 {
-    public class BingoTownContractConstants
+    public class BeangoTownContractConstants
     {
         public const string CardSymbol = "ELF";
         public const string BeanPassSymbol = "BEAN";

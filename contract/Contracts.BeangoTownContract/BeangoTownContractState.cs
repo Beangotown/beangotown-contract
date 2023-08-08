@@ -1,13 +1,12 @@
-using System.Collections.Generic;
 using AElf.Sdk.CSharp.State;
 using AElf.Types;
 
-namespace AElf.Contracts.BingoTownContract
+namespace Contracts.BeangoTownContract
 {
     /// <summary>
     /// The state class of the contract, it inherits from the AElf.Sdk.CSharp.State.ContractState type. 
     /// </summary>
-    public partial class BingoTownContractState : ContractState
+    public partial class BeangoTownContractState : ContractState
     {
         // state definitions go here.
         public BoolState Initialized { get; set; }

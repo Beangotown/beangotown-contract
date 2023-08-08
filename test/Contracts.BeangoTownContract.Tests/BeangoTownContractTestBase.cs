@@ -2,22 +2,20 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AElf.Boilerplate.TestBase;
 using AElf.Contracts.Consensus.AEDPoS;
-using AElf.Contracts.Election;
 using AElf.Contracts.MultiToken;
 using AElf.Cryptography.ECDSA;
 using AElf.Types;
 using Google.Protobuf.WellKnownTypes;
-using Contracts.BingoGameContract;
 using Volo.Abp.Threading;
 
-namespace AElf.Contracts.BingoTownContract
+namespace Contracts.BeangoTownContract
 {
-    public class BingoTownContractTestBase : DAppContractTestBase<BingoTownContractTestModule>
+    public class BeangoTownContractTestBase : DAppContractTestBase<BeangoTownContractTestModule>
     {
         // You can get address of any contract via GetAddress method, for example:
         // internal Address DAppContractAddress => GetAddress(DAppSmartContractAddressNameProvider.StringName);
-        internal BingoTownContractContainer.BingoTownContractStub BingoTownContractStub { get; set; }
-        internal BingoTownContractContainer.BingoTownContractStub UserStub { get; set; }
+        internal BeangoTownContractContainer.BeangoTownContractStub BeangoTownContractStub { get; set; }
+        internal BeangoTownContractContainer.BeangoTownContractStub UserStub { get; set; }
         internal TokenContractContainer.TokenContractStub TokenContractStub { get; set; }
         internal AEDPoSContractImplContainer.AEDPoSContractImplStub AEDPoSContractStub { get; set; }
         protected ECKeyPair DefaultKeyPair => Accounts[0].KeyPair;
@@ -25,17 +23,17 @@ namespace AElf.Contracts.BingoTownContract
         
         protected ECKeyPair UserKeyPair => Accounts[1].KeyPair;
         
-        public BingoTownContractTestBase()
+        public BeangoTownContractTestBase()
         {
-            BingoTownContractStub = GetBingoTownContractStub(DefaultKeyPair);
-            UserStub = GetBingoTownContractStub(UserKeyPair);
+            BeangoTownContractStub = GetBeangoTownContractStub(DefaultKeyPair);
+            UserStub = GetBeangoTownContractStub(UserKeyPair);
             TokenContractStub = GetTokenContractTester(DefaultKeyPair);
             AEDPoSContractStub = GetAEDPoSContractStub(DefaultKeyPair);
-            AsyncHelper.RunSync(() => BingoTownContractStub.Initialize.SendAsync(new Empty()));
+            AsyncHelper.RunSync(() => BeangoTownContractStub.Initialize.SendAsync(new Empty()));
             AsyncHelper.RunSync(() => CreateSeedNftCollection(TokenContractStub));
             AsyncHelper.RunSync(() => CreateNftAsync(TokenContractStub,new CreateInput
             {
-                Symbol = BingoTownContractConstants.BeanPassSymbol,
+                Symbol = BeangoTownContractConstants.BeanPassSymbol,
                 TokenName = "BeanPassSymbol",
                 TotalSupply = 10,
                 Decimals = 0,
@@ -46,9 +44,9 @@ namespace AElf.Contracts.BingoTownContract
             );
         }
 
-        internal BingoTownContractContainer.BingoTownContractStub GetBingoTownContractStub(ECKeyPair senderKeyPair)
+        internal BeangoTownContractContainer.BeangoTownContractStub GetBeangoTownContractStub(ECKeyPair senderKeyPair)
         {
-            return GetTester<BingoTownContractContainer.BingoTownContractStub>(DAppContractAddress, senderKeyPair);
+            return GetTester<BeangoTownContractContainer.BeangoTownContractStub>(DAppContractAddress, senderKeyPair);
         }
         
         internal TokenContractContainer.TokenContractStub GetTokenContractTester(ECKeyPair keyPair)

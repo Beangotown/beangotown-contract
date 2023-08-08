@@ -3,9 +3,9 @@ using AElf.Boilerplate.TestBase;
 using AElf.Kernel.SmartContract.Application;
 using AElf.Types;
 
-namespace AElf.Contracts.BingoTownContract
+namespace Contracts.BeangoTownContract
 {
-    public class BingoTownContractInitializationProvider : IContractInitializationProvider
+    public class BeangoTownContractInitializationProvider : IContractInitializationProvider
     {
         public List<ContractInitializationMethodCall> GetInitializeMethodList(byte[] contractCode)
         {
@@ -13,6 +13,6 @@ namespace AElf.Contracts.BingoTownContract
         }
 
         public Hash SystemSmartContractName { get; } = DAppSmartContractAddressNameProvider.Name;
-        public string ContractCodeName { get; } = "AElf.Contracts.BingoTownContract";
+        public string ContractCodeName { get; } = "AElf.Contracts.BeangoTownContract";
     }
 }

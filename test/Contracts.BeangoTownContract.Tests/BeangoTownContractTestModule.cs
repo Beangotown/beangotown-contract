@@ -7,24 +7,24 @@ using Microsoft.Extensions.DependencyInjection;
 using Volo.Abp;
 using Volo.Abp.Modularity;
 
-namespace AElf.Contracts.BingoTownContract
+namespace Contracts.BeangoTownContract
 {
     [DependsOn(typeof(MainChainDAppContractTestModule))]
-    public class BingoTownContractTestModule : MainChainDAppContractTestModule
+    public class BeangoTownContractTestModule : MainChainDAppContractTestModule
     {
         public override void ConfigureServices(ServiceConfigurationContext context)
         {
-            context.Services.AddSingleton<IContractInitializationProvider, BingoTownContractInitializationProvider>();
+            context.Services.AddSingleton<IContractInitializationProvider, BeangoTownContractInitializationProvider>();
         }
 
         public override void OnPreApplicationInitialization(ApplicationInitializationContext context)
         {
             var contractCodeProvider = context.ServiceProvider.GetService<IContractCodeProvider>();
-            var contractDllLocation = typeof(BingoTownContract).Assembly.Location;
+            var contractDllLocation = typeof(BeangoTownContract).Assembly.Location;
             var contractCodes = new Dictionary<string, byte[]>(contractCodeProvider.Codes)
             {
                 {
-                    new BingoTownContractInitializationProvider().ContractCodeName,
+                    new BeangoTownContractInitializationProvider().ContractCodeName,
                     File.ReadAllBytes(contractDllLocation)
                 }
             };

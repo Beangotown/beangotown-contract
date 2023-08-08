@@ -136,7 +136,7 @@ message MerklePath {
     repeated MerklePathNode merkle_path_nodes = 1;
 }
 
-message MerklePathNode{
+message MerklePathNode {
     // The node hash.
     Hash hash = 1;
     // Whether it is a left child node.

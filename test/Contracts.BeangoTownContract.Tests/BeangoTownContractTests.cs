@@ -1,31 +1,28 @@
-using System.Linq;
 using System.Threading.Tasks;
-using AElf.ContractTestBase.ContractTestKit;
+using AElf;
 using AElf.Types;
-using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
-using Contracts.BingoGameContract;
 using Shouldly;
 using Xunit;
 
-namespace AElf.Contracts.BingoTownContract
+namespace Contracts.BeangoTownContract
 {
-    public class BingoTownContractTests : BingoTownContractTestBase
+    public class BeangoTownContractTests : BeangoTownContractTestBase
     {
         [Fact]
         public async Task InitializeTests()
         {
-            await BingoTownContractStub.Initialize.SendAsync(new Empty());
+            await BeangoTownContractStub.Initialize.SendAsync(new Empty());
         }
         
         [Fact]
         public async Task PlayTests()
         {
             var id = await PlayAsync(true);
-            var playInformation = await BingoTownContractStub.GetPlayerInformation.CallAsync(DefaultAddress);
-            playInformation.PlayableCount.ShouldBe(BingoTownContractConstants.DailyMaxPlayCount-1);
+            var playInformation = await BeangoTownContractStub.GetPlayerInformation.CallAsync(DefaultAddress);
+            playInformation.PlayableCount.ShouldBe(BeangoTownContractConstants.DailyMaxPlayCount-1);
             playInformation.PlayerAddress.ShouldBe(DefaultAddress);
-            var boutInformation = await BingoTownContractStub.GetBoutInformation.CallAsync(new GetBoutInformationInput()
+            var boutInformation = await BeangoTownContractStub.GetBoutInformation.CallAsync(new GetBoutInformationInput()
             {
                 PlayId = id
             });
@@ -34,10 +31,10 @@ namespace AElf.Contracts.BingoTownContract
             boutInformation.IsComplete.ShouldBe(false); 
             boutInformation.PlayId.ShouldBe(id);
             var newId = await PlayAsync(false);
-            var newPlayInformation = await BingoTownContractStub.GetPlayerInformation.CallAsync(DefaultAddress);
-            newPlayInformation.PlayableCount.ShouldBe(BingoTownContractConstants.DailyMaxPlayCount-2);
+            var newPlayInformation = await BeangoTownContractStub.GetPlayerInformation.CallAsync(DefaultAddress);
+            newPlayInformation.PlayableCount.ShouldBe(BeangoTownContractConstants.DailyMaxPlayCount-2);
             newPlayInformation.PlayerAddress.ShouldBe(DefaultAddress);   
-            var newBoutInformation = await BingoTownContractStub.GetBoutInformation.CallAsync(
+            var newBoutInformation = await BeangoTownContractStub.GetBoutInformation.CallAsync(
                 new GetBoutInformationInput()
                 {
                     PlayId = newId
@@ -47,7 +44,7 @@ namespace AElf.Contracts.BingoTownContract
             {
                 await PlayAsync(true);
             }
-            var  s = await BingoTownContractStub.Play.SendWithExceptionAsync(new PlayInput{ResetStart = false});
+            var  s = await BeangoTownContractStub.Play.SendWithExceptionAsync(new PlayInput{ResetStart = false});
             s.TransactionResult.Error.ShouldContain("PlayableCount is not enough");
         }
         
@@ -65,7 +62,7 @@ namespace AElf.Contracts.BingoTownContract
                 sumGridNum = (sumGridNum+ boutInformation.GridNum) % 18;
             }
 
-          var playerInfo =  await  BingoTownContractStub.GetPlayerInformation.CallAsync(DefaultAddress);
+          var playerInfo =  await  BeangoTownContractStub.GetPlayerInformation.CallAsync(DefaultAddress);
           playerInfo.SumScore.ShouldBe(sumScore);
           playerInfo.CurGridNum.ShouldBe(sumGridNum);
         }
@@ -75,11 +72,11 @@ namespace AElf.Contracts.BingoTownContract
             var id = await PlayAsync(true);
             for (var i = 0; i < 7; i++)
             {
-                await BingoTownContractStub.Bingo.SendWithExceptionAsync(id);
+                await BeangoTownContractStub.Bingo.SendWithExceptionAsync(id);
             }
 
-            await BingoTownContractStub.Bingo.SendAsync(id);
-            var boutInformation = await BingoTownContractStub.GetBoutInformation.CallAsync(new GetBoutInformationInput
+            await BeangoTownContractStub.Bingo.SendAsync(id);
+            var boutInformation = await BeangoTownContractStub.GetBoutInformation.CallAsync(new GetBoutInformationInput
             {
                 PlayId = id
             });
@@ -103,7 +100,7 @@ namespace AElf.Contracts.BingoTownContract
 
         private async Task<Hash> PlayAsync(bool resetStart)
         {
-            var tx = await BingoTownContractStub.Play.SendAsync(new PlayInput
+            var tx = await BeangoTownContractStub.Play.SendAsync(new PlayInput
             {
                 ResetStart = resetStart
             });
@@ -113,7 +110,7 @@ namespace AElf.Contracts.BingoTownContract
         public async Task BingoTests_Fail_AfterRegister()
         {
             var id = await PlayAsync(true);
-            var result = await BingoTownContractStub.Bingo.SendWithExceptionAsync(HashHelper.ComputeFrom("test"));
+            var result = await BeangoTownContractStub.Bingo.SendWithExceptionAsync(HashHelper.ComputeFrom("test"));
             result.TransactionResult.Error.ShouldContain("Bout not found.");
         }
         
@@ -122,23 +119,23 @@ namespace AElf.Contracts.BingoTownContract
         public async void ChangeAdmin_WithValidInput_ShouldUpdateAdmin()
         {
             var newAdminAddress = new Address { Value = HashHelper.ComputeFrom("NewAdmin").Value };
-            await BingoTownContractStub.ChangeAdmin.SendAsync(newAdminAddress);
-            var getAdminAddress = await BingoTownContractStub.GetAdmin.CallAsync(new Empty());
+            await BeangoTownContractStub.ChangeAdmin.SendAsync(newAdminAddress);
+            var getAdminAddress = await BeangoTownContractStub.GetAdmin.CallAsync(new Empty());
             Assert.Equal(newAdminAddress, getAdminAddress);
         }
         [Fact]
         public async void GetAdmin_ShouldReturnAdminAddress(){
-            var getAdminAddress = await BingoTownContractStub.GetAdmin.CallAsync(new Empty());
+            var getAdminAddress = await BeangoTownContractStub.GetAdmin.CallAsync(new Empty());
             Assert.Equal(DefaultAddress, getAdminAddress);
         }
         
         [Fact]
         public async Task GetBoutInformationTests_Fail_InvalidInput()
         {
-            var result = await BingoTownContractStub.GetBoutInformation.SendWithExceptionAsync(new GetBoutInformationInput());
+            var result = await BeangoTownContractStub.GetBoutInformation.SendWithExceptionAsync(new GetBoutInformationInput());
             result.TransactionResult.Error.ShouldContain("Invalid playId");
             
-            result = await BingoTownContractStub.GetBoutInformation.SendWithExceptionAsync(new GetBoutInformationInput
+            result = await BeangoTownContractStub.GetBoutInformation.SendWithExceptionAsync(new GetBoutInformationInput
             {
                 PlayId = Hash.Empty
             });
@@ -150,18 +147,18 @@ namespace AElf.Contracts.BingoTownContract
         public async Task SetLimitSettingsTests()
         {
 
-            var settings = await BingoTownContractStub.GetGameLimitSettings.CallAsync(new Empty());
-            settings.DailyMaxPlayCount.ShouldBe(BingoTownContractConstants.DailyMaxPlayCount);
-            settings.DailyPlayCountResetHours.ShouldBe(BingoTownContractConstants.DailyPlayCountResetHours);
+            var settings = await BeangoTownContractStub.GetGameLimitSettings.CallAsync(new Empty());
+            settings.DailyMaxPlayCount.ShouldBe(BeangoTownContractConstants.DailyMaxPlayCount);
+            settings.DailyPlayCountResetHours.ShouldBe(BeangoTownContractConstants.DailyPlayCountResetHours);
             var dailyMaxPlayCount = 4;
             var dailyPlayCountResetHours = 8;
-            await BingoTownContractStub.SetGameLimitSettings.SendAsync(new GameLimitSettings()
+            await BeangoTownContractStub.SetGameLimitSettings.SendAsync(new GameLimitSettings()
             {
                 DailyMaxPlayCount = dailyMaxPlayCount,
                 DailyPlayCountResetHours = dailyPlayCountResetHours
             });
 
-            settings = await BingoTownContractStub.GetGameLimitSettings.CallAsync(new Empty());
+            settings = await BeangoTownContractStub.GetGameLimitSettings.CallAsync(new Empty());
             settings.DailyMaxPlayCount.ShouldBe(dailyMaxPlayCount);
             settings.DailyPlayCountResetHours.ShouldBe(dailyPlayCountResetHours);
         }
@@ -183,13 +180,13 @@ namespace AElf.Contracts.BingoTownContract
         public async Task SetLimitSettingsTests_Fail_InvalidInput()
         {
 
-            var result = await BingoTownContractStub.SetGameLimitSettings.SendWithExceptionAsync(new GameLimitSettings()
+            var result = await BeangoTownContractStub.SetGameLimitSettings.SendWithExceptionAsync(new GameLimitSettings()
             {
                 DailyMaxPlayCount = -1
             });
             result.TransactionResult.Error.ShouldContain("Invalid input");
 
-            result = await BingoTownContractStub.SetGameLimitSettings.SendWithExceptionAsync(new GameLimitSettings
+            result = await BeangoTownContractStub.SetGameLimitSettings.SendWithExceptionAsync(new GameLimitSettings
             {
                 DailyMaxPlayCount = 1,
                 DailyPlayCountResetHours = 80

@@ -1,20 +1,19 @@
 using System;
-using System.Collections.Generic;
+using AElf;
 using AElf.Contracts.MultiToken;
 using AElf.CSharp.Core;
 using AElf.Sdk.CSharp;
 using AElf.Types;
 using Google.Protobuf.WellKnownTypes;
-using Contracts.BingoGameContract;
 
-namespace AElf.Contracts.BingoTownContract
+namespace Contracts.BeangoTownContract
 {
     /// <summary>
-    /// The C# implementation of the contract defined in bingo_town_contract.proto that is located in the "protobuf"
+    /// The C# implementation of the contract defined in beango_town_contract.proto that is located in the "protobuf"
     /// folder.
     /// Notice that it inherits from the protobuf generated code. 
     /// </summary>
-    public class BingoTownContract : BingoTownContractContainer.BingoTownContractBase
+    public class BeangoTownContract : BeangoTownContractContainer.BeangoTownContractBase
     {
         /// <summary>
         /// The implementation of the Hello method. It takes no parameters and returns on of the custom data types
@@ -38,8 +37,8 @@ namespace AElf.Contracts.BingoTownContract
             State.Admin.Value = Context.Sender;
             State.GameLimitSettings.Value = new GameLimitSettings()
             {
-              DailyMaxPlayCount  = BingoTownContractConstants.DailyMaxPlayCount,
-              DailyPlayCountResetHours  = BingoTownContractConstants.DailyPlayCountResetHours
+              DailyMaxPlayCount  = BeangoTownContractConstants.DailyMaxPlayCount,
+              DailyPlayCountResetHours  = BeangoTownContractConstants.DailyPlayCountResetHours
             };
             State.GridTypeList.Value = new GridTypeList{Value = {GridType.Blue,GridType.Gold,GridType.Red,GridType.Blue,
                 GridType.Red,GridType.Blue,GridType.Gold,GridType.Red,GridType.Blue,GridType.Red,GridType.Blue,GridType.Blue,
@@ -53,7 +52,7 @@ namespace AElf.Contracts.BingoTownContract
         {
             var getBalanceOutput = State.TokenContract.GetBalance.Call(new GetBalanceInput
             {
-                Symbol = BingoTownContractConstants.BeanPassSymbol,
+                Symbol = BeangoTownContractConstants.BeanPassSymbol,
                 Owner = Context.Sender,
             });
             Assert(getBalanceOutput.Balance > 0, "BeanPass Balance is not enough");
@@ -92,7 +91,7 @@ namespace AElf.Contracts.BingoTownContract
                 PlayerAddress = Context.Sender
             };
             State.BoutInformation[Context.OriginTransactionId] = boutInformation;
-            return new PlayOutput { ExpectedBlockHeight = Context.CurrentHeight.Add(BingoTownContractConstants.BingoBlockHeight) };
+            return new PlayOutput { ExpectedBlockHeight = Context.CurrentHeight.Add(BeangoTownContractConstants.BingoBlockHeight) };
         } 
 
         public override Empty Bingo(Hash input)
@@ -151,11 +150,11 @@ namespace AElf.Contracts.BingoTownContract
             int score;
             if (gridType == GridType.Blue)
             {
-                score = BingoTownContractConstants.BlueGridScore;
+                score = BeangoTownContractConstants.BlueGridScore;
             }
             else if (gridType == GridType.Red)
             {
-                score = BingoTownContractConstants.RedGridScore;
+                score = BeangoTownContractConstants.RedGridScore;
             }
             else
             {
@@ -181,7 +180,7 @@ namespace AElf.Contracts.BingoTownContract
 
             Assert(boutInformation.PlayerAddress == Context.Sender, "Only the player can get the result.");
 
-            targetHeight = boutInformation.PlayBlockHeight.Add(BingoTownContractConstants.BingoBlockHeight);
+            targetHeight = boutInformation.PlayBlockHeight.Add(BeangoTownContractConstants.BingoBlockHeight);
             Assert(targetHeight <= Context.CurrentHeight, "Invalid target height.");
         }
 
