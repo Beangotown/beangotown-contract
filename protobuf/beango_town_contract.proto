@@ -120,12 +120,11 @@ message GridTypeList {
 
 // LogEvent
 
-message Play {
+message Played {
     option (aelf.is_event) = true;
     int64 play_block_height = 1;
     aelf.Hash play_id = 2;
-    google.protobuf.Timestamp play_time = 3;
-    aelf.Address player_address = 4;
+    aelf.Address player_address = 3;
 }
 message Bingoed {
     option (aelf.is_event) = true;
@@ -136,8 +135,7 @@ message Bingoed {
     bool is_complete = 5;
     aelf.Hash play_id = 6;
     int64 bingo_block_height = 7;
-    google.protobuf.Timestamp play_time = 8;
-    aelf.Address player_address = 9;
+    aelf.Address player_address = 8;
 }
 
 

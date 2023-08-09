@@ -91,11 +91,10 @@ namespace Contracts.BeangoTownContract
                 PlayerAddress = Context.Sender
             };
             State.BoutInformation[Context.OriginTransactionId] = boutInformation;
-            Context.Fire(new Play()
+            Context.Fire(new Played()
             {
                 PlayBlockHeight = boutInformation.PlayBlockHeight,
                 PlayId = boutInformation.PlayId,
-                PlayTime = boutInformation.PlayTime,
                 PlayerAddress = boutInformation.PlayerAddress
             });
             return new PlayOutput { ExpectedBlockHeight = Context.CurrentHeight.Add(BeangoTownContractConstants.BingoBlockHeight) };
@@ -125,7 +124,6 @@ namespace Contracts.BeangoTownContract
                 IsComplete = boutInformation.IsComplete,
                 PlayId = boutInformation.PlayId,
                 BingoBlockHeight = boutInformation.BingoBlockHeight,
-                PlayTime = boutInformation.PlayTime,
                 PlayerAddress = boutInformation.PlayerAddress
             });
             return new Empty();
