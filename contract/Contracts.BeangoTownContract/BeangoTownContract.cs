@@ -183,8 +183,6 @@ namespace Contracts.BeangoTownContract
 
             Assert(!boutInformation!.IsComplete, "Bout already finished.");
 
-            Assert(boutInformation.PlayerAddress == Context.Sender, "Only the player can get the result.");
-
             targetHeight = boutInformation.PlayBlockHeight.Add(BeangoTownContractConstants.BingoBlockHeight);
             Assert(targetHeight <= Context.CurrentHeight, "Invalid target height.");
         }
@@ -192,7 +190,6 @@ namespace Contracts.BeangoTownContract
         public override Empty ChangeAdmin(Address input)
         {
             Assert(State.Admin.Value == Context.Sender, "No permission.");
-            Assert(input != null, "Invalid input.");
 
             if (State.Admin.Value == input)
             {
@@ -210,7 +207,6 @@ namespace Contracts.BeangoTownContract
 
         public override BoutInformation GetBoutInformation(GetBoutInformationInput input)
         {
-            Assert(input != null, "Invalid input.");
             Assert(input!.PlayId != null && !input.PlayId.Value.IsNullOrEmpty(), "Invalid playId.");
 
             var boutInformation = State.BoutInformation[input.PlayId];
@@ -222,7 +218,6 @@ namespace Contracts.BeangoTownContract
 
         public override PlayerInformation GetPlayerInformation(Address input)
         {
-            Assert(input != null, "Invalid input.");
             var playerInformation =  State.PlayerInformation[input];
             Assert(playerInformation !=null,"playerInformation not found.");
             var gameLimitSettings = State.GameLimitSettings.Value;

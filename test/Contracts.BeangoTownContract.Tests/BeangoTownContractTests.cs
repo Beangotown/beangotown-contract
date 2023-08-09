@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using AElf;
+using AElf.Contracts.MultiToken;
 using AElf.Types;
 using Google.Protobuf.WellKnownTypes;
 using Shouldly;
@@ -14,10 +15,21 @@ namespace Contracts.BeangoTownContract
         {
             await BeangoTownContractStub.Initialize.SendAsync(new Empty());
         }
-        
+
+        [Fact]
+        public async Task Play_FailTests()
+        {
+            var tx = await BeangoTownContractStub.Play.SendWithExceptionAsync(new PlayInput
+            {
+                ResetStart = true
+            });
+            tx.TransactionResult.Error.ShouldContain("BeanPass Balance is not enough");
+        }
+
         [Fact]
         public async Task PlayTests()
         {
+            await PlayInitAsync();
             var id = await PlayAsync(true);
             var playInformation = await BeangoTownContractStub.GetPlayerInformation.CallAsync(DefaultAddress);
             playInformation.PlayableCount.ShouldBe(BeangoTownContractConstants.DailyMaxPlayCount-1);
@@ -47,12 +59,13 @@ namespace Contracts.BeangoTownContract
             var  s = await BeangoTownContractStub.Play.SendWithExceptionAsync(new PlayInput{ResetStart = false});
             s.TransactionResult.Error.ShouldContain("PlayableCount is not enough");
         }
-        
-        
-        
+
+       
+
         [Fact]
         public async Task BingoTests()
         {
+            await PlayInitAsync();
             int sumScore = 0;
             int sumGridNum = 0;
             for (int i = 0; i < 5; i++)
@@ -107,11 +120,21 @@ namespace Contracts.BeangoTownContract
             return tx.TransactionResult.TransactionId;
         }
         [Fact]
-        public async Task BingoTests_Fail_AfterRegister()
+        public async Task BingoTests_Fail()
         {
+            await PlayInitAsync();
             var id = await PlayAsync(true);
             var result = await BeangoTownContractStub.Bingo.SendWithExceptionAsync(HashHelper.ComputeFrom("test"));
             result.TransactionResult.Error.ShouldContain("Bout not found.");
+            var inputCheckResult = await BeangoTownContractStub.Bingo.SendWithExceptionAsync(new Hash());
+            inputCheckResult.TransactionResult.Error.ShouldContain("Invalid input");
+            var userCheckResult  = await UserStub.Bingo.SendWithExceptionAsync(id);
+            userCheckResult.TransactionResult.Error.ShouldContain("not Login before");
+            var heightCheckResult =  await BeangoTownContractStub.Bingo.SendWithExceptionAsync(id);
+            heightCheckResult.TransactionResult.Error.ShouldContain("Invalid target height.");
+            var boutInformation = await BingoTest();
+            var repeatCheckRe =  await BeangoTownContractStub.Bingo.SendWithExceptionAsync(boutInformation.PlayId);
+            repeatCheckRe.TransactionResult.Error.ShouldContain("Bout already finished");
         }
         
         
@@ -123,6 +146,16 @@ namespace Contracts.BeangoTownContract
             var getAdminAddress = await BeangoTownContractStub.GetAdmin.CallAsync(new Empty());
             Assert.Equal(newAdminAddress, getAdminAddress);
         }
+        
+        [Fact]
+        public async void ChangeAdmin_Fail()
+        {
+            var inputCheckRe =  await BeangoTownContractStub.ChangeAdmin.SendAsync(null);
+            inputCheckRe.TransactionResult.Error.ShouldContain("Invalid input.");
+            var newAdminAddress = new Address { Value = HashHelper.ComputeFrom("NewAdmin").Value };
+            var checkRe = await UserStub.ChangeAdmin.SendWithExceptionAsync(newAdminAddress);
+            checkRe.TransactionResult.Error.ShouldContain("No permission.");
+        }
         [Fact]
         public async void GetAdmin_ShouldReturnAdminAddress(){
             var getAdminAddress = await BeangoTownContractStub.GetAdmin.CallAsync(new Empty());
@@ -132,7 +165,9 @@ namespace Contracts.BeangoTownContract
         [Fact]
         public async Task GetBoutInformationTests_Fail_InvalidInput()
         {
-            var result = await BeangoTownContractStub.GetBoutInformation.SendWithExceptionAsync(new GetBoutInformationInput());
+            var result = await BeangoTownContractStub.GetBoutInformation.SendWithExceptionAsync(null);
+            result.TransactionResult.Error.ShouldContain("Invalid input."); 
+            result = await BeangoTownContractStub.GetBoutInformation.SendWithExceptionAsync(new GetBoutInformationInput());
             result.TransactionResult.Error.ShouldContain("Invalid playId");
             
             result = await BeangoTownContractStub.GetBoutInformation.SendWithExceptionAsync(new GetBoutInformationInput
@@ -161,6 +196,10 @@ namespace Contracts.BeangoTownContract
             settings = await BeangoTownContractStub.GetGameLimitSettings.CallAsync(new Empty());
             settings.DailyMaxPlayCount.ShouldBe(dailyMaxPlayCount);
             settings.DailyPlayCountResetHours.ShouldBe(dailyPlayCountResetHours);
+            await PlayInitAsync();
+            await PlayAsync(true);
+            var playerInformation = await BeangoTownContractStub.GetPlayerInformation.CallAsync(DefaultAddress);
+            playerInformation.PlayableCount.ShouldBe(dailyMaxPlayCount-1);
         }
 
         [Fact]
@@ -175,6 +214,7 @@ namespace Contracts.BeangoTownContract
 
             result.TransactionResult.Error.ShouldContain("No permission");
         }
+        
 
         [Fact]
         public async Task SetLimitSettingsTests_Fail_InvalidInput()
@@ -193,6 +233,14 @@ namespace Contracts.BeangoTownContract
             });
             result.TransactionResult.Error.ShouldContain("Invalid input");
         }
-
+        private async Task PlayInitAsync(){
+            await TokenContractStub.Issue.SendAsync( new IssueInput
+            {
+                Symbol = BeangoTownContractConstants.BeanPassSymbol,
+                Amount = 1,
+                Memo = "ddd",
+                To = DefaultAddress
+            });
+        }
     }
 }

@@ -31,7 +31,19 @@ namespace Contracts.BeangoTownContract
             AEDPoSContractStub = GetAEDPoSContractStub(DefaultKeyPair);
             AsyncHelper.RunSync(() => BeangoTownContractStub.Initialize.SendAsync(new Empty()));
             AsyncHelper.RunSync(() => CreateSeedNftCollection(TokenContractStub));
-            AsyncHelper.RunSync(() => CreateNftAsync(TokenContractStub,new CreateInput
+            AsyncHelper.RunSync(() => CreateNftCollectionAsync(TokenContractStub,new CreateInput
+            {
+                Symbol = "BEAN-0",
+                TokenName = "BeanPassSymbol collection",
+                TotalSupply = 10,
+                Decimals = 0,
+                Issuer = DefaultAddress,
+                IsBurnable = true,
+                Owner = DefaultAddress
+            })
+            );
+
+            AsyncHelper.RunSync(() => CreateNftAsync(TokenContractStub, new CreateInput()
             {
                 Symbol = BeangoTownContractConstants.BeanPassSymbol,
                 TokenName = "BeanPassSymbol",
@@ -40,8 +52,7 @@ namespace Contracts.BeangoTownContract
                 Issuer = DefaultAddress,
                 IsBurnable = true,
                 Owner = DefaultAddress
-            })
-            );
+            }));
         }
 
         internal BeangoTownContractContainer.BeangoTownContractStub GetBeangoTownContractStub(ECKeyPair senderKeyPair)
@@ -73,7 +84,7 @@ namespace Contracts.BeangoTownContract
             await stub.Create.SendAsync(input);
         }
         
-        internal async Task<CreateInput> CreateNftAsync(TokenContractContainer.TokenContractStub stub,
+        internal async Task<CreateInput> CreateNftCollectionAsync(TokenContractContainer.TokenContractStub stub,
             CreateInput createInput)
         {
             var input = BuildSeedCreateInput(createInput);
@@ -87,17 +98,16 @@ namespace Contracts.BeangoTownContract
             });
             await stub.Approve.SendAsync(new ApproveInput() { Spender = TokenContractAddress, Symbol = "SEED-1", Amount = 1 });
             await stub.Create.SendAsync(createInput);
-            await stub.Issue.SendAsync( new IssueInput
-            {
-                Symbol = createInput.Symbol,
-                Amount = 1,
-                Memo = "ddd",
-                To = DefaultAddress
-            });
-            
             return input;
         }
-        
+
+        private async Task CreateNftAsync(TokenContractContainer.TokenContractStub stub,
+            CreateInput createInput)
+        {
+            await stub.Create.SendAsync(createInput);
+            
+        }
+
         internal CreateInput BuildSeedCreateInput(CreateInput createInput)
         {
             var input = new CreateInput

@@ -4,8 +4,7 @@ namespace Contracts.BeangoTownContract
 {
     public class BeangoTownContractConstants
     {
-        public const string CardSymbol = "ELF";
-        public const string BeanPassSymbol = "BEAN";
+        public const string BeanPassSymbol = "BEAN-1";
         
         public const int DailyMaxPlayCount = 5;
         public const int DailyPlayCountResetHours = 0;
