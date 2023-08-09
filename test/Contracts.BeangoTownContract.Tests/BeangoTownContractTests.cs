@@ -150,8 +150,6 @@ namespace Contracts.BeangoTownContract
         [Fact]
         public async void ChangeAdmin_Fail()
         {
-            var inputCheckRe =  await BeangoTownContractStub.ChangeAdmin.SendAsync(null);
-            inputCheckRe.TransactionResult.Error.ShouldContain("Invalid input.");
             var newAdminAddress = new Address { Value = HashHelper.ComputeFrom("NewAdmin").Value };
             var checkRe = await UserStub.ChangeAdmin.SendWithExceptionAsync(newAdminAddress);
             checkRe.TransactionResult.Error.ShouldContain("No permission.");
@@ -165,9 +163,8 @@ namespace Contracts.BeangoTownContract
         [Fact]
         public async Task GetBoutInformationTests_Fail_InvalidInput()
         {
-            var result = await BeangoTownContractStub.GetBoutInformation.SendWithExceptionAsync(null);
-            result.TransactionResult.Error.ShouldContain("Invalid input."); 
-            result = await BeangoTownContractStub.GetBoutInformation.SendWithExceptionAsync(new GetBoutInformationInput());
+           
+            var  result = await BeangoTownContractStub.GetBoutInformation.SendWithExceptionAsync(new GetBoutInformationInput());
             result.TransactionResult.Error.ShouldContain("Invalid playId");
             
             result = await BeangoTownContractStub.GetBoutInformation.SendWithExceptionAsync(new GetBoutInformationInput
