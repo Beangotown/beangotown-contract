@@ -187,6 +187,16 @@ namespace Contracts.BeangoTownContract
             Assert(targetHeight <= Context.CurrentHeight, "Invalid target height.");
         }
 
+        public override BoolValue CheckBeanPass(Empty input)
+        {
+            var getBalanceOutput = State.TokenContract.GetBalance.Call(new GetBalanceInput
+            {
+                Symbol = BeangoTownContractConstants.BeanPassSymbol,
+                Owner = Context.Sender,
+            });
+            return new BoolValue { Value = getBalanceOutput.Balance > 0 };
+        }
+
         public override Empty ChangeAdmin(Address input)
         {
             Assert(State.Admin.Value == Context.Sender, "No permission.");

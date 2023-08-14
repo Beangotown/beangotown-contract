@@ -239,5 +239,14 @@ namespace Contracts.BeangoTownContract
                 To = DefaultAddress
             });
         }
+
+
+        [Fact]
+        public async Task CheckBeanPass_Test()
+        {
+           await PlayInitAsync();
+           var BalanceRe = await BeangoTownContractStub.CheckBeanPass.CallAsync(new Empty());
+           BalanceRe.Value.ShouldBe(true);
+        }
     }
 }
