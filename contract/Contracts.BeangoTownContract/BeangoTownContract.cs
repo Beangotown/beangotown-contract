@@ -48,7 +48,7 @@ namespace Contracts.BeangoTownContract
         }
 
 
-        private void InitPlayerInfo()
+        private void InitPlayerInfo(bool resetStart)
         {
             var getBalanceOutput = State.TokenContract.GetBalance.Call(new GetBalanceInput
             {
@@ -75,6 +75,11 @@ namespace Contracts.BeangoTownContract
                 playerInformation.LastPlayTime = Context.CurrentBlockTime;
             }
 
+            if (resetStart)
+            {
+                playerInformation.CurGridNum = 0;
+            }
+
             Assert(playerInformation.PlayableCount > 0,"PlayableCount is not enough");
             playerInformation.PlayableCount--;
             State.PlayerInformation[Context.Sender] = playerInformation;
@@ -82,7 +87,7 @@ namespace Contracts.BeangoTownContract
 
         public override PlayOutput Play(PlayInput input)
         {
-            InitPlayerInfo();
+            InitPlayerInfo(input.ResetStart);
             var boutInformation = new BoutInformation
             {
                 PlayBlockHeight = Context.CurrentHeight,
