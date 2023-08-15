@@ -131,7 +131,7 @@ namespace Contracts.BeangoTownContract
 
         private  void SetPlayerInformation(PlayerInformation playerInformation, BoutInformation boutInformation)
         {
-            playerInformation.CurGridNum = (playerInformation.CurGridNum+boutInformation.GridNum) % State.GridTypeList.Value.CalculateSize();
+            playerInformation.CurGridNum = (playerInformation.CurGridNum+boutInformation.GridNum) % State.GridTypeList.Value.Value.Count;
             playerInformation.SumScore += boutInformation.Score;
             State.PlayerInformation[boutInformation.PlayerAddress] = playerInformation;
         }
@@ -139,9 +139,9 @@ namespace Contracts.BeangoTownContract
         private void SetBoutInformationBingoInfo(Hash input, Hash randomHash, PlayerInformation playerInformation,
             BoutInformation boutInformation)
         {
-            var randomNum = Convert.ToInt32(Math.Abs(randomHash.ToInt64()) % 6 + 1);
-            var curGridNum = playerInformation.CurGridNum + randomNum;
-            var gridType = State.GridTypeList.Value.Value[curGridNum];
+            var randomNum = Convert.ToInt32(Math.Abs(randomHash.ToInt64()% 6)  + 1);
+           
+            var gridType = State.GridTypeList.Value.Value[playerInformation.CurGridNum];
             boutInformation.Score = GetScoreByGridType(input, gridType, randomHash);
             boutInformation.IsComplete = true;
             boutInformation.GridNum = randomNum;
@@ -164,7 +164,7 @@ namespace Contracts.BeangoTownContract
             else
             {
                 var scoreHash = HashHelper.ConcatAndCompute(randomHash, input);
-                score = Convert.ToInt32(Math.Abs(randomHash.ToInt64()) % 20 + 30);
+                score = Convert.ToInt32(Math.Abs(scoreHash.ToInt64()% 20)  + 30);
             }
             return score;
         }
