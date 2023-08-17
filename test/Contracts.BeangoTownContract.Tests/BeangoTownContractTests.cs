@@ -245,7 +245,7 @@ namespace Contracts.BeangoTownContract
         public async Task CheckBeanPass_Test()
         {
            await PlayInitAsync();
-           var BalanceRe = await BeangoTownContractStub.CheckBeanPass.CallAsync(new Empty());
+           var BalanceRe = await BeangoTownContractStub.CheckBeanPass.CallAsync(DefaultAddress);
            BalanceRe.Value.ShouldBe(true);
         }
     }

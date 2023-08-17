@@ -10,19 +10,9 @@ namespace Contracts.BeangoTownContract
 {
     /// <summary>
     /// The C# implementation of the contract defined in beango_town_contract.proto that is located in the "protobuf"
-    /// folder.
-    /// Notice that it inherits from the protobuf generated code. 
     /// </summary>
     public class BeangoTownContract : BeangoTownContractContainer.BeangoTownContractBase
     {
-        /// <summary>
-        /// The implementation of the Hello method. It takes no parameters and returns on of the custom data types
-        /// defined in the protobuf definition file.
-        /// </summary>
-        /// <param name="input">Empty message (from Protobuf)</param>
-        /// <returns>a HelloReturn</returns>
-       
-
         public override Empty Initialize(Empty input)
         {
             if (State.Initialized.Value)
@@ -56,25 +46,7 @@ namespace Contracts.BeangoTownContract
                 Owner = Context.Sender,
             });
             Assert(getBalanceOutput.Balance > 0, "BeanPass Balance is not enough");
-            var gameLimitSettings = State.GameLimitSettings.Value;
-            var playerInformation = State.PlayerInformation[Context.Sender];
-            if (playerInformation == null)
-            {
-                playerInformation = new PlayerInformation
-                {
-                    PlayerAddress = Context.Sender,
-                    LastPlayTime = Context.CurrentBlockTime,
-                    SumScore = 0,
-                    CurGridNum = 0,
-                    PlayableCount = gameLimitSettings.DailyMaxPlayCount
-                };
-            }
-            else
-            {
-                playerInformation.PlayableCount = GetPlayableCount(gameLimitSettings, playerInformation);
-                playerInformation.LastPlayTime = Context.CurrentBlockTime;
-            }
-
+            var playerInformation = GetCurrentPlayerInformation(Context.Sender, true);
             if (resetStart)
             {
                 playerInformation.CurGridNum = 0;
@@ -192,12 +164,12 @@ namespace Contracts.BeangoTownContract
             Assert(targetHeight <= Context.CurrentHeight, "Invalid target height.");
         }
 
-        public override BoolValue CheckBeanPass(Empty input)
+        public override BoolValue CheckBeanPass(Address input)
         {
             var getBalanceOutput = State.TokenContract.GetBalance.Call(new GetBalanceInput
             {
                 Symbol = BeangoTownContractConstants.BeanPassSymbol,
-                Owner = Context.Sender,
+                Owner = input,
             });
             return new BoolValue { Value = getBalanceOutput.Balance > 0 };
         }
@@ -233,20 +205,43 @@ namespace Contracts.BeangoTownContract
 
         public override PlayerInformation GetPlayerInformation(Address input)
         {
-            var playerInformation =  State.PlayerInformation[input];
-            Assert(playerInformation !=null,"playerInformation not found.");
-            var gameLimitSettings = State.GameLimitSettings.Value;
-            playerInformation.PlayableCount = GetPlayableCount(gameLimitSettings, playerInformation);
+            var getBalanceOutput = State.TokenContract.GetBalance.Call(new GetBalanceInput
+            {
+                Symbol = BeangoTownContractConstants.BeanPassSymbol,
+                Owner = input,
+            });
+            var nftEnough = getBalanceOutput.Balance > 0;
+           
+            var playerInformation = GetCurrentPlayerInformation(input, nftEnough);
             return playerInformation;
         
         }
 
-        private Int32 GetPlayableCount(GameLimitSettings gameLimitSettings, PlayerInformation playerInformation)
+        private PlayerInformation GetCurrentPlayerInformation(Address input, bool nftEnough)
         {
+            var playerInformation = State.PlayerInformation[input];
+            if (playerInformation == null)
+            {
+                playerInformation = new PlayerInformation
+                {
+                    PlayerAddress = input,
+                    SumScore = 0,
+                    CurGridNum = 0
+                };
+            }
+
+            var gameLimitSettings = State.GameLimitSettings.Value;
+            playerInformation.PlayableCount = GetPlayableCount(gameLimitSettings, playerInformation, nftEnough);
+            return playerInformation;
+        }
+
+        private Int32 GetPlayableCount(GameLimitSettings gameLimitSettings, PlayerInformation playerInformation,bool nftEnough)
+        {
+            if (!nftEnough) return 0;
             var now = Context.CurrentBlockTime.ToDateTime();
-           var playCountResetDateTime =
+            var playCountResetDateTime =
                new DateTime(now.Year, now.Month, now.Day, gameLimitSettings.DailyPlayCountResetHours, 0, 0,DateTimeKind.Utc).ToTimestamp();
-            if (playerInformation.LastPlayTime.CompareTo(playCountResetDateTime) == -1)
+            if (playerInformation.LastPlayTime == null || playerInformation.LastPlayTime.CompareTo(playCountResetDateTime) == -1)
             {
                 return gameLimitSettings.DailyMaxPlayCount;
             }
