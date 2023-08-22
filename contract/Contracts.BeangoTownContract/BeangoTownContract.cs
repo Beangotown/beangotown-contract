@@ -27,12 +27,18 @@ namespace Contracts.BeangoTownContract
             State.Admin.Value = Context.Sender;
             State.GameLimitSettings.Value = new GameLimitSettings()
             {
-              DailyMaxPlayCount  = BeangoTownContractConstants.DailyMaxPlayCount,
-              DailyPlayCountResetHours  = BeangoTownContractConstants.DailyPlayCountResetHours
+                DailyMaxPlayCount = BeangoTownContractConstants.DailyMaxPlayCount,
+                DailyPlayCountResetHours = BeangoTownContractConstants.DailyPlayCountResetHours
             };
-            State.GridTypeList.Value = new GridTypeList{Value = {GridType.Blue,GridType.Gold,GridType.Red,GridType.Blue,
-                GridType.Red,GridType.Blue,GridType.Gold,GridType.Red,GridType.Blue,GridType.Red,GridType.Blue,GridType.Blue,
-                GridType.Gold,GridType.Red,GridType.Blue,GridType.Blue,GridType.Red,GridType.Blue}};
+            State.GridTypeList.Value = new GridTypeList
+            {
+                Value =
+                {
+                    GridType.Blue, GridType.Blue, GridType.Red, GridType.Blue, GridType.Gold, GridType.Red,
+                    GridType.Blue, GridType.Blue, GridType.Red, GridType.Gold, GridType.Blue, GridType.Red,
+                    GridType.Blue, GridType.Blue, GridType.Gold, GridType.Red, GridType.Blue, GridType.Blue
+                }
+            };
             State.Initialized.Value = true;
             return new Empty();
         }
@@ -52,7 +58,7 @@ namespace Contracts.BeangoTownContract
                 playerInformation.CurGridNum = 0;
             }
 
-            Assert(playerInformation.PlayableCount > 0,"PlayableCount is not enough");
+            Assert(playerInformation.PlayableCount > 0, "PlayableCount is not enough");
             playerInformation.PlayableCount--;
             State.PlayerInformation[Context.Sender] = playerInformation;
         }
@@ -60,12 +66,14 @@ namespace Contracts.BeangoTownContract
         public override PlayOutput Play(PlayInput input)
         {
             InitPlayerInfo(input.ResetStart);
+            var expectedBlockHeight = Context.CurrentHeight.Add(BeangoTownContractConstants.BingoBlockHeight);
             var boutInformation = new BoutInformation
             {
                 PlayBlockHeight = Context.CurrentHeight,
                 PlayId = Context.OriginTransactionId,
                 PlayTime = Context.CurrentBlockTime,
-                PlayerAddress = Context.Sender
+                PlayerAddress = Context.Sender,
+                ExpectedBlockHeight = expectedBlockHeight
             };
             State.BoutInformation[Context.OriginTransactionId] = boutInformation;
             Context.Fire(new Played()
@@ -74,14 +82,14 @@ namespace Contracts.BeangoTownContract
                 PlayId = boutInformation.PlayId,
                 PlayerAddress = boutInformation.PlayerAddress
             });
-            return new PlayOutput { ExpectedBlockHeight = Context.CurrentHeight.Add(BeangoTownContractConstants.BingoBlockHeight) };
-        } 
+            return new PlayOutput { ExpectedBlockHeight = expectedBlockHeight };
+        }
 
         public override Empty Bingo(Hash input)
         {
             Context.LogDebug(() => $"Getting game result of play id: {input.ToHex()}");
 
-            checkBingo(input,out var playerInformation, out var boutInformation, out var targetHeight);
+            checkBingo(input, out var playerInformation, out var boutInformation, out var targetHeight);
             var randomHash = State.ConsensusContract.GetRandomHash.Call(new Int64Value
             {
                 Value = targetHeight
@@ -106,9 +114,10 @@ namespace Contracts.BeangoTownContract
             return new Empty();
         }
 
-        private  void SetPlayerInformation(PlayerInformation playerInformation, BoutInformation boutInformation)
+        private void SetPlayerInformation(PlayerInformation playerInformation, BoutInformation boutInformation)
         {
-            playerInformation.CurGridNum = (playerInformation.CurGridNum+boutInformation.GridNum) % State.GridTypeList.Value.Value.Count;
+            playerInformation.CurGridNum = (playerInformation.CurGridNum + boutInformation.GridNum) %
+                                           State.GridTypeList.Value.Value.Count;
             playerInformation.SumScore += boutInformation.Score;
             State.PlayerInformation[boutInformation.PlayerAddress] = playerInformation;
         }
@@ -116,8 +125,8 @@ namespace Contracts.BeangoTownContract
         private void SetBoutInformationBingoInfo(Hash input, Hash randomHash, PlayerInformation playerInformation,
             BoutInformation boutInformation)
         {
-            var randomNum = Convert.ToInt32(Math.Abs(randomHash.ToInt64()% 6)  + 1);
-           
+            var randomNum = Convert.ToInt32(Math.Abs(randomHash.ToInt64() % 6) + 1);
+
             var gridType = State.GridTypeList.Value.Value[playerInformation.CurGridNum];
             boutInformation.Score = GetScoreByGridType(input, gridType, randomHash);
             boutInformation.IsComplete = true;
@@ -127,7 +136,7 @@ namespace Contracts.BeangoTownContract
             State.BoutInformation[input] = boutInformation;
         }
 
-        private  Int32 GetScoreByGridType(Hash input, GridType gridType, Hash randomHash)
+        private Int32 GetScoreByGridType(Hash input, GridType gridType, Hash randomHash)
         {
             int score;
             if (gridType == GridType.Blue)
@@ -141,16 +150,18 @@ namespace Contracts.BeangoTownContract
             else
             {
                 var scoreHash = HashHelper.ConcatAndCompute(randomHash, input);
-                score = Convert.ToInt32(Math.Abs(scoreHash.ToInt64()% 20)  + 30);
+                score = Convert.ToInt32(Math.Abs(scoreHash.ToInt64() % 20) + 30);
             }
+
             return score;
         }
 
-        private void checkBingo(Hash input,out PlayerInformation playerInformation, out BoutInformation boutInformation, out long targetHeight)
+        private void checkBingo(Hash input, out PlayerInformation playerInformation,
+            out BoutInformation boutInformation, out long targetHeight)
         {
             Assert(input != null && !input.Value.IsNullOrEmpty(), "Invalid input.");
 
-             playerInformation = State.PlayerInformation[Context.Sender];
+            playerInformation = State.PlayerInformation[Context.Sender];
 
             Assert(playerInformation != null, $"User {Context.Sender} not Login before.");
 
@@ -169,7 +180,7 @@ namespace Contracts.BeangoTownContract
             var getBalanceOutput = State.TokenContract.GetBalance.Call(new GetBalanceInput
             {
                 Symbol = BeangoTownContractConstants.BeanPassSymbol,
-                Owner = input,
+                Owner = input
             });
             return new BoolValue { Value = getBalanceOutput.Balance > 0 };
         }
@@ -186,7 +197,7 @@ namespace Contracts.BeangoTownContract
             State.Admin.Value = input;
             return new Empty();
         }
-        
+
         public override Address GetAdmin(Empty input)
         {
             return State.Admin.Value;
@@ -211,10 +222,9 @@ namespace Contracts.BeangoTownContract
                 Owner = input,
             });
             var nftEnough = getBalanceOutput.Balance > 0;
-           
+
             var playerInformation = GetCurrentPlayerInformation(input, nftEnough);
             return playerInformation;
-        
         }
 
         private PlayerInformation GetCurrentPlayerInformation(Address input, bool nftEnough)
@@ -235,16 +245,20 @@ namespace Contracts.BeangoTownContract
             return playerInformation;
         }
 
-        private Int32 GetPlayableCount(GameLimitSettings gameLimitSettings, PlayerInformation playerInformation,bool nftEnough)
+        private Int32 GetPlayableCount(GameLimitSettings gameLimitSettings, PlayerInformation playerInformation,
+            bool nftEnough)
         {
             if (!nftEnough) return 0;
             var now = Context.CurrentBlockTime.ToDateTime();
             var playCountResetDateTime =
-               new DateTime(now.Year, now.Month, now.Day, gameLimitSettings.DailyPlayCountResetHours, 0, 0,DateTimeKind.Utc).ToTimestamp();
-            if (playerInformation.LastPlayTime == null || playerInformation.LastPlayTime.CompareTo(playCountResetDateTime) == -1)
+                new DateTime(now.Year, now.Month, now.Day, gameLimitSettings.DailyPlayCountResetHours, 0, 0,
+                    DateTimeKind.Utc).ToTimestamp();
+            if (playerInformation.LastPlayTime == null ||
+                playerInformation.LastPlayTime.CompareTo(playCountResetDateTime) == -1)
             {
                 return gameLimitSettings.DailyMaxPlayCount;
             }
+
             return playerInformation.PlayableCount;
         }
 
@@ -257,11 +271,9 @@ namespace Contracts.BeangoTownContract
         {
             Assert(State.Admin.Value == Context.Sender, "No permission.");
             Assert(input.DailyPlayCountResetHours is >= 0 and < 24, "Invalid input.");
-            Assert(input.DailyMaxPlayCount  >= 0, "Invalid input.");
+            Assert(input.DailyMaxPlayCount >= 0, "Invalid input.");
             State.GameLimitSettings.Value = input;
             return new Empty();
         }
     }
-    
-    
 }
