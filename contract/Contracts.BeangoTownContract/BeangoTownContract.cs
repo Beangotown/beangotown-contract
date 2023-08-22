@@ -89,7 +89,7 @@ namespace Contracts.BeangoTownContract
         {
             Context.LogDebug(() => $"Getting game result of play id: {input.ToHex()}");
 
-            checkBingo(input, out var playerInformation, out var boutInformation, out var targetHeight);
+            CheckBingo(input, out var playerInformation, out var boutInformation, out var targetHeight);
             var randomHash = State.ConsensusContract.GetRandomHash.Call(new Int64Value
             {
                 Value = targetHeight
@@ -156,7 +156,7 @@ namespace Contracts.BeangoTownContract
             return score;
         }
 
-        private void checkBingo(Hash input, out PlayerInformation playerInformation,
+        private void CheckBingo(Hash input, out PlayerInformation playerInformation,
             out BoutInformation boutInformation, out long targetHeight)
         {
             Assert(input != null && !input.Value.IsNullOrEmpty(), "Invalid input.");
