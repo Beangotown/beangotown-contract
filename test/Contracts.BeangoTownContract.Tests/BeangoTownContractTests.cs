@@ -82,7 +82,7 @@ namespace Contracts.BeangoTownContract
 
         private async Task<BoutInformation> BingoTest( )
         {
-            var id = await PlayAsync(true);
+            var id = await PlayAsync(false);
             for (var i = 0; i < 7; i++)
             {
                 await BeangoTownContractStub.Bingo.SendWithExceptionAsync(id);
@@ -183,7 +183,7 @@ namespace Contracts.BeangoTownContract
             settings.DailyMaxPlayCount.ShouldBe(BeangoTownContractConstants.DailyMaxPlayCount);
             settings.DailyPlayCountResetHours.ShouldBe(BeangoTownContractConstants.DailyPlayCountResetHours);
             var dailyMaxPlayCount = 4;
-            var dailyPlayCountResetHours = 8;
+            var dailyPlayCountResetHours = 0;
             await BeangoTownContractStub.SetGameLimitSettings.SendAsync(new GameLimitSettings()
             {
                 DailyMaxPlayCount = dailyMaxPlayCount,

@@ -47,7 +47,7 @@ namespace Contracts.BeangoTownContract
             {
                 Symbol = BeangoTownContractConstants.BeanPassSymbol,
                 TokenName = "BeanPassSymbol",
-                TotalSupply = 10,
+                TotalSupply = 100,
                 Decimals = 0,
                 Issuer = DefaultAddress,
                 IsBurnable = true,

@@ -49,7 +49,7 @@ namespace AElf.Boilerplate.BeangoTownContract.Launcher
         private byte[] GetContractCodes()
         {
             return ContractsDeployer.GetContractCodes<DeployContractsSystemTransactionGenerator>(_contractOptions
-                .GenesisContractDir)["AElf.Contracts.BeangoTownContract"];
+                .GenesisContractDir)["Contracts.BeangoTownContract"];
         }
     }
 }
