@@ -1,6 +1,7 @@
-branches:
-  include:
-    - main
+trigger:
+  branches:
+    include:
+      - main
 jobs:
   - job: build_all_darwin
     displayName: Build all tasks (macOS)
