@@ -183,7 +183,7 @@ namespace Contracts.BeangoTownContract
             settings.DailyMaxPlayCount.ShouldBe(BeangoTownContractConstants.DailyMaxPlayCount);
             settings.DailyPlayCountResetHours.ShouldBe(BeangoTownContractConstants.DailyPlayCountResetHours);
             var dailyMaxPlayCount = 4;
-            var dailyPlayCountResetHours = 0;
+            var dailyPlayCountResetHours = 8;
             await BeangoTownContractStub.SetGameLimitSettings.SendAsync(new GameLimitSettings()
             {
                 DailyMaxPlayCount = dailyMaxPlayCount,

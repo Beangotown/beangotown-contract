@@ -2,6 +2,7 @@ using System;
 using AElf;
 using AElf.Contracts.MultiToken;
 using AElf.CSharp.Core;
+using AElf.CSharp.Core.Extension;
 using AElf.Sdk.CSharp;
 using AElf.Types;
 using Google.Protobuf.WellKnownTypes;
@@ -36,7 +37,7 @@ namespace Contracts.BeangoTownContract
                 {
                     GridType.Blue, GridType.Blue, GridType.Red, GridType.Blue, GridType.Gold, GridType.Red,
                     GridType.Blue, GridType.Blue, GridType.Red, GridType.Gold, GridType.Blue, GridType.Red,
-                    GridType.Blue, GridType.Blue, GridType.Gold, GridType.Red, GridType.Blue, GridType.Blue
+                    GridType.Blue, GridType.Blue, GridType.Gold, GridType.Red, GridType.Blue, GridType.Red
                 }
             };
             State.Initialized.Value = true;
@@ -53,13 +54,13 @@ namespace Contracts.BeangoTownContract
             });
             Assert(getBalanceOutput.Balance > 0, "BeanPass Balance is not enough");
             var playerInformation = GetCurrentPlayerInformation(Context.Sender, true);
+            Assert(playerInformation.PlayableCount > 0, "PlayableCount is not enough");
             if (resetStart)
             {
                 playerInformation.CurGridNum = 0;
             }
-
-            Assert(playerInformation.PlayableCount > 0, "PlayableCount is not enough");
             playerInformation.PlayableCount--;
+            playerInformation.LastPlayTime = Context.CurrentBlockTime;
             State.PlayerInformation[Context.Sender] = playerInformation;
         }
 
@@ -116,18 +117,23 @@ namespace Contracts.BeangoTownContract
 
         private void SetPlayerInformation(PlayerInformation playerInformation, BoutInformation boutInformation)
         {
-            playerInformation.CurGridNum = (playerInformation.CurGridNum + boutInformation.GridNum) %
-                                           State.GridTypeList.Value.Value.Count;
+            playerInformation.CurGridNum = GetPlayerCurGridNum(playerInformation.CurGridNum, boutInformation.GridNum);
             playerInformation.SumScore += boutInformation.Score;
             State.PlayerInformation[boutInformation.PlayerAddress] = playerInformation;
+        }
+
+        private int GetPlayerCurGridNum(int preGridNum, int gridNum)
+        {
+            return (preGridNum + gridNum) %
+                   State.GridTypeList.Value.Value.Count;
         }
 
         private void SetBoutInformationBingoInfo(Hash input, Hash randomHash, PlayerInformation playerInformation,
             BoutInformation boutInformation)
         {
             var randomNum = Convert.ToInt32(Math.Abs(randomHash.ToInt64() % 6) + 1);
-
-            var gridType = State.GridTypeList.Value.Value[playerInformation.CurGridNum];
+            var curGridNum = GetPlayerCurGridNum(playerInformation.CurGridNum, randomNum);
+            var gridType = State.GridTypeList.Value.Value[curGridNum];
             boutInformation.Score = GetScoreByGridType(input, gridType, randomHash);
             boutInformation.IsComplete = true;
             boutInformation.GridNum = randomNum;
@@ -253,8 +259,14 @@ namespace Contracts.BeangoTownContract
             var playCountResetDateTime =
                 new DateTime(now.Year, now.Month, now.Day, gameLimitSettings.DailyPlayCountResetHours, 0, 0,
                     DateTimeKind.Utc).ToTimestamp();
-            if (playerInformation.LastPlayTime == null ||
-                playerInformation.LastPlayTime.CompareTo(playCountResetDateTime) == -1)
+            // LastPlayTime ,now must not be same DayField
+            if (playerInformation.LastPlayTime == null || Context.CurrentBlockTime.CompareTo(
+                                                           playerInformation.LastPlayTime.AddDays(1)
+                                                       ) > -1
+                                                       || (playerInformation.LastPlayTime.CompareTo(
+                                                               playCountResetDateTime) == -1 &&
+                                                           Context.CurrentBlockTime.CompareTo(playCountResetDateTime) >
+                                                           -1))
             {
                 return gameLimitSettings.DailyMaxPlayCount;
             }
