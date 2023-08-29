@@ -45,9 +45,6 @@ service BeangoTownContract {
     }
 
     // Views
-//    rpc GetBeanPassCheck (google.protobuf.Empty) returns (CheckBeanPassOutput) {
-//        option (aelf.is_view) = true;
-//    }
     rpc CheckBeanPass (aelf.Address) returns (google.protobuf.BoolValue) {
         option (aelf.is_view) = true;
     }
