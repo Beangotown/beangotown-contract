@@ -33,7 +33,7 @@ namespace Contracts.BeangoTownContract
             AsyncHelper.RunSync(() => CreateSeedNftCollection(TokenContractStub));
             AsyncHelper.RunSync(() => CreateNftCollectionAsync(TokenContractStub,new CreateInput
             {
-                Symbol = "BEAN-0",
+                Symbol = "BEANPASS-0",
                 TokenName = "BeanPassSymbol collection",
                 TotalSupply = 10,
                 Decimals = 0,
