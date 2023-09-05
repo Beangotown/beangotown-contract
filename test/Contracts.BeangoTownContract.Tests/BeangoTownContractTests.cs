@@ -127,7 +127,7 @@ namespace Contracts.BeangoTownContract
             var result = await BeangoTownContractStub.Bingo.SendWithExceptionAsync(HashHelper.ComputeFrom("test"));
             result.TransactionResult.Error.ShouldContain("Bout not found.");
             var inputCheckResult = await BeangoTownContractStub.Bingo.SendWithExceptionAsync(new Hash());
-            inputCheckResult.TransactionResult.Error.ShouldContain("Invalid input");
+            inputCheckResult.TransactionResult.Error.ShouldContain("Invalid playId");
             var userCheckResult  = await UserStub.Bingo.SendWithExceptionAsync(id);
             userCheckResult.TransactionResult.Error.ShouldContain("not Login before");
             var heightCheckResult =  await BeangoTownContractStub.Bingo.SendWithExceptionAsync(id);
@@ -221,14 +221,14 @@ namespace Contracts.BeangoTownContract
             {
                 DailyMaxPlayCount = -1
             });
-            result.TransactionResult.Error.ShouldContain("Invalid input");
+            result.TransactionResult.Error.ShouldContain("Invalid DailyMaxPlayCount");
 
             result = await BeangoTownContractStub.SetGameLimitSettings.SendWithExceptionAsync(new GameLimitSettings
             {
                 DailyMaxPlayCount = 1,
                 DailyPlayCountResetHours = 80
             });
-            result.TransactionResult.Error.ShouldContain("Invalid input");
+            result.TransactionResult.Error.ShouldContain("Invalid DailyPlayCountResetHours");
         }
         private async Task PlayInitAsync(){
             await TokenContractStub.Issue.SendAsync( new IssueInput
