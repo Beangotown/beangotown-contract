@@ -2,6 +2,7 @@ trigger:
   branches:
     include:
       - main
+      - dev
 jobs:
   - job: build_all_darwin
     displayName: Build all tasks (macOS)
