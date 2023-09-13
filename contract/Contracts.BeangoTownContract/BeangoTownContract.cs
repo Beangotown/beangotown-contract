@@ -156,7 +156,7 @@ namespace Contracts.BeangoTownContract
             else
             {
                 var scoreHash = HashHelper.ConcatAndCompute(randomHash, playId);
-                score = Convert.ToInt32(Math.Abs(scoreHash.ToInt64() % 20) + 30);
+                score = Convert.ToInt32(Math.Abs(scoreHash.ToInt64() % 21) + 30);
             }
 
             return score;
