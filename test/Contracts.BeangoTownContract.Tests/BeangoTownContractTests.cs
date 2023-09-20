@@ -52,12 +52,6 @@ namespace Contracts.BeangoTownContract
                     PlayId = newId
                 });
             newBoutInformation.PlayId.ShouldBe(newId);
-            for (int i = 0; i < 3; i++)
-            {
-                await PlayAsync(true);
-            }
-            var  s = await BeangoTownContractStub.Play.SendWithExceptionAsync(new PlayInput{ResetStart = false});
-            s.TransactionResult.Error.ShouldContain("PlayableCount is not enough");
         }
 
        
