@@ -9,5 +9,5 @@ public class BeangoTownContractConstants
     public const int BlueGridScore = 1;
     public const int RedGridScore = 5;
 
-    public const long BingoBlockHeight = 8;
+    public const long BingoBlockHeight = 1;
 }

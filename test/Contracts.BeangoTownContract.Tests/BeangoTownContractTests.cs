@@ -77,18 +77,13 @@ namespace Contracts.BeangoTownContract
         private async Task<BoutInformation> BingoTest( )
         {
             var id = await PlayAsync(false);
-            for (var i = 0; i < 7; i++)
-            {
-                await BeangoTownContractStub.Bingo.SendWithExceptionAsync(id);
-            }
-
             await BeangoTownContractStub.Bingo.SendAsync(id);
             var boutInformation = await BeangoTownContractStub.GetBoutInformation.CallAsync(new GetBoutInformationInput
             {
                 PlayId = id
             });
             boutInformation.BingoBlockHeight.ShouldNotBeNull();
-            boutInformation.GridNum.ShouldBeInRange(1, 6);
+            boutInformation.GridNum.ShouldBeInRange(1, 18);
             if (boutInformation.GridType == GridType.Blue)
             {
                 boutInformation.Score.ShouldBe(1);
@@ -109,7 +104,9 @@ namespace Contracts.BeangoTownContract
         {
             var tx = await BeangoTownContractStub.Play.SendAsync(new PlayInput
             {
-                ResetStart = resetStart
+                ResetStart = resetStart,
+                DiceCount = 3
+                
             });
             return tx.TransactionResult.TransactionId;
         }
@@ -124,8 +121,6 @@ namespace Contracts.BeangoTownContract
             inputCheckResult.TransactionResult.Error.ShouldContain("Invalid playId");
             var userCheckResult  = await UserStub.Bingo.SendWithExceptionAsync(id);
             userCheckResult.TransactionResult.Error.ShouldContain("not Login before");
-            var heightCheckResult =  await BeangoTownContractStub.Bingo.SendWithExceptionAsync(id);
-            heightCheckResult.TransactionResult.Error.ShouldContain("Invalid target height.");
             var boutInformation = await BingoTest();
             var repeatCheckRe =  await BeangoTownContractStub.Bingo.SendWithExceptionAsync(boutInformation.PlayId);
             repeatCheckRe.TransactionResult.Error.ShouldContain("Bout already finished");

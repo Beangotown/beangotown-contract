@@ -68,6 +68,7 @@ service BeangoTownContract {
 
 message PlayInput {
     bool reset_start = 1;
+    int32 dice_count = 2;
 }
 message PlayOutput {
     int64 expected_block_height = 1;
@@ -97,6 +98,10 @@ message BoutInformation {
     google.protobuf.Timestamp play_time = 8;
     aelf.Address player_address = 9;
     int64 expected_block_height = 10;
+    int32 dice_count = 11;
+    repeated int32 dice_numbers = 12;
+    int32 start_grid_num = 13;
+    int32 end_grid_num = 14;
 }
 
 message GameLimitSettings {
