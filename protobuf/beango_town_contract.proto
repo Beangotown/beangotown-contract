@@ -37,6 +37,10 @@ service BeangoTownContract {
     }
     rpc Bingo (aelf.Hash) returns (google.protobuf.Empty) {
     }
+
+    rpc BingoNew (google.protobuf.Empty) returns (google.protobuf.Empty) {
+    }
+    
     rpc SetGameLimitSettings (GameLimitSettings) returns (google.protobuf.Empty) {
     }
     rpc Initialize (google.protobuf.Empty) returns (google.protobuf.Empty) {

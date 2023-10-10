@@ -237,5 +237,49 @@ namespace Contracts.BeangoTownContract
            var BalanceRe = await BeangoTownContractStub.CheckBeanPass.CallAsync(DefaultAddress);
            BalanceRe.Value.ShouldBe(true);
         }
+
+        [Fact]
+        public async Task BingoNewTests()
+        {
+            await PlayInitAsync();
+            int sumScore = 0;
+            int sumGridNum = 0;
+            for (int i = 0; i < 5; i++)
+            {
+                var boutInformation = await BingoNewTest();
+                sumScore += boutInformation.Score;
+                sumGridNum = (sumGridNum + boutInformation.GridNum) % 18;
+            }
+
+            var playerInfo = await BeangoTownContractStub.GetPlayerInformation.CallAsync(DefaultAddress);
+            playerInfo.SumScore.ShouldBe(sumScore);
+            playerInfo.CurGridNum.ShouldBe(sumGridNum);
+        }
+
+        private async Task<BoutInformation> BingoNewTest()
+        {
+            var result = await BeangoTownContractStub.BingoNew.SendAsync(new Empty());
+            var boutInformation = await BeangoTownContractStub.GetBoutInformation.CallAsync(new GetBoutInformationInput
+            {
+                PlayId = result.TransactionResult.TransactionId
+            });
+            boutInformation.BingoBlockHeight.ShouldNotBeNull();
+            boutInformation.GridNum.ShouldBeInRange(1, 18);
+            if (boutInformation.GridType == GridType.Blue)
+            {
+                boutInformation.Score.ShouldBe(1);
+            }
+            else if (boutInformation.GridType == GridType.Red)
+            {
+                boutInformation.Score.ShouldBe(5);
+            }
+            else
+            {
+                boutInformation.Score.ShouldBeInRange(20, 50);
+            }
+
+            boutInformation.IsComplete.ShouldBe(true);
+            return boutInformation;
+        }
     }
 }
