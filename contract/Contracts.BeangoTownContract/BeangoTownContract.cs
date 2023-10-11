@@ -119,19 +119,10 @@ namespace Contracts.BeangoTownContract
             return new Empty();
         }
 
-        public override Empty BingoNew(Empty input)
+        public override Empty BingoNew(PlayInput input)
         {
-            InitPlayerInfo(false);
-            var boutInformation = new BoutInformation
-            {
-                PlayBlockHeight = Context.CurrentHeight,
-                PlayId = Context.OriginTransactionId,
-                PlayTime = Context.CurrentBlockTime,
-                PlayerAddress = Context.Sender,
-                ExpectedBlockHeight = Context.CurrentHeight,
-                DiceCount = 1
-            };
-            State.BoutInformation[Context.OriginTransactionId] = boutInformation;
+            Assert(input.DiceCount <= 3, "Invalid diceCount");
+            InitPlayerInfo(input.ResetStart);
             var randomHash = State.ConsensusContract.GetRandomHash.Call(new Int64Value
             {
                 Value = Context.CurrentHeight
@@ -140,6 +131,15 @@ namespace Contracts.BeangoTownContract
             Assert(randomHash != null && !randomHash.Value.IsNullOrEmpty(),
                 "Still preparing your game result, please wait for a while :)");
             var playerInformation = State.PlayerInformation[Context.Sender];
+            var boutInformation = new BoutInformation
+            {
+                PlayBlockHeight = Context.CurrentHeight,
+                PlayId = Context.OriginTransactionId,
+                PlayTime = Context.CurrentBlockTime,
+                PlayerAddress = Context.Sender,
+                ExpectedBlockHeight = Context.CurrentHeight,
+                DiceCount = input.DiceCount == 0 ? 1 : input.DiceCount
+            };
             SetBoutInformationBingoInfo(boutInformation.PlayId, randomHash, playerInformation, boutInformation);
             SetPlayerInformation(playerInformation, boutInformation);
             Context.Fire(new Bingoed

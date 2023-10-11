@@ -258,7 +258,11 @@ namespace Contracts.BeangoTownContract
 
         private async Task<BoutInformation> BingoNewTest()
         {
-            var result = await BeangoTownContractStub.BingoNew.SendAsync(new Empty());
+            var result = await BeangoTownContractStub.BingoNew.SendAsync(new PlayInput()
+            {
+                DiceCount = 2,
+                ResetStart = false
+            });
             var boutInformation = await BeangoTownContractStub.GetBoutInformation.CallAsync(new GetBoutInformationInput
             {
                 PlayId = result.TransactionResult.TransactionId
