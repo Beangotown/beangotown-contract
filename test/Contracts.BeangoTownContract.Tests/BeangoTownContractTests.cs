@@ -239,14 +239,14 @@ namespace Contracts.BeangoTownContract
         }
 
         [Fact]
-        public async Task BingoNewTests()
+        public async Task PlayNewTests()
         {
             await PlayInitAsync();
             int sumScore = 0;
             int sumGridNum = 0;
             for (int i = 0; i < 5; i++)
             {
-                var boutInformation = await BingoNewTest();
+                var boutInformation = await PlayNewTest();
                 sumScore += boutInformation.Score;
                 sumGridNum = (sumGridNum + boutInformation.GridNum) % 18;
             }
@@ -256,12 +256,13 @@ namespace Contracts.BeangoTownContract
             playerInfo.CurGridNum.ShouldBe(sumGridNum);
         }
 
-        private async Task<BoutInformation> BingoNewTest()
+        private async Task<BoutInformation> PlayNewTest()
         {
-            var result = await BeangoTownContractStub.BingoNew.SendAsync(new PlayInput()
+            var result = await BeangoTownContractStub.Play.SendAsync(new PlayInput()
             {
                 DiceCount = 2,
-                ResetStart = false
+                ResetStart = false,
+                ExecuteBingo = true
             });
             var boutInformation = await BeangoTownContractStub.GetBoutInformation.CallAsync(new GetBoutInformationInput
             {

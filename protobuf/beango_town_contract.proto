@@ -37,9 +37,6 @@ service BeangoTownContract {
     }
     rpc Bingo (aelf.Hash) returns (google.protobuf.Empty) {
     }
-
-    rpc BingoNew (PlayInput) returns (google.protobuf.Empty) {
-    }
     
     rpc SetGameLimitSettings (GameLimitSettings) returns (google.protobuf.Empty) {
     }
@@ -77,6 +74,7 @@ service BeangoTownContract {
 message PlayInput {
     bool reset_start = 1;
     int32 dice_count = 2;
+    bool execute_bingo = 3;
 }
 message PlayOutput {
     int64 expected_block_height = 1;
