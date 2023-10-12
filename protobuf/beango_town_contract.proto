@@ -37,7 +37,7 @@ service BeangoTownContract {
     }
     rpc Bingo (aelf.Hash) returns (google.protobuf.Empty) {
     }
-    
+
     rpc SetGameLimitSettings (GameLimitSettings) returns (google.protobuf.Empty) {
     }
     rpc Initialize (google.protobuf.Empty) returns (google.protobuf.Empty) {
@@ -65,9 +65,7 @@ service BeangoTownContract {
         option (aelf.is_view) = true;
     }
 
-    rpc RandomEq (GetBoutInformationInput) returns (google.protobuf.BoolValue) {
-        option (aelf.is_view) = true;
-    }
+
 
 }
 
@@ -108,7 +106,6 @@ message BoutInformation {
     repeated int32 dice_numbers = 12;
     int32 start_grid_num = 13;
     int32 end_grid_num = 14;
-    aelf.Hash random_hash = 15;
 }
 
 message GameLimitSettings {

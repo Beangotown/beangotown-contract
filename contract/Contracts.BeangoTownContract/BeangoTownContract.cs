@@ -180,7 +180,7 @@ namespace Contracts.BeangoTownContract
         private void SetBoutInformationBingoInfo(Hash playId, Hash randomHash, PlayerInformation playerInformation,
             BoutInformation boutInformation)
         {
-            var usefulHash = HashHelper.ConcatAndCompute(randomHash, playId);
+            var usefulHash = HashHelper.XorAndCompute(randomHash, playId);
             var dices = GetDices(usefulHash, boutInformation.DiceCount);
             var randomNum = dices.Sum();
             var curGridNum = GetPlayerCurGridNum(playerInformation.CurGridNum, randomNum);
@@ -193,7 +193,6 @@ namespace Contracts.BeangoTownContract
             boutInformation.IsComplete = true;
             boutInformation.GridType = gridType;
             boutInformation.BingoBlockHeight = Context.CurrentHeight;
-            boutInformation.RandomHash = randomHash;
             State.BoutInformation[playId] = boutInformation;
         }
 
@@ -341,16 +340,6 @@ namespace Contracts.BeangoTownContract
             Assert(input.DailyMaxPlayCount >= 0, "Invalid dailyMaxPlayCount.");
             State.GameLimitSettings.Value = input;
             return new Empty();
-        }
-
-        public override BoolValue RandomEq(GetBoutInformationInput input)
-        {
-            var bound = State.BoutInformation[input.PlayId];
-            var randomHash = State.ConsensusContract.GetRandomHash.Call(new Int64Value
-            {
-                Value = bound.BingoBlockHeight
-            });
-            return new BoolValue { Value = bound.RandomHash.Equals(randomHash) };
         }
     }
 }
