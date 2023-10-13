@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using AElf;
 using AElf.Contracts.MultiToken;
 using AElf.CSharp.Core;
@@ -66,24 +68,54 @@ namespace Contracts.BeangoTownContract
 
         public override PlayOutput Play(PlayInput input)
         {
+            Assert(input.DiceCount <= 3, "Invalid diceCount");
             InitPlayerInfo(input.ResetStart);
-            var expectedBlockHeight = Context.CurrentHeight.Add(BeangoTownContractConstants.BingoBlockHeight);
             var boutInformation = new BoutInformation
             {
                 PlayBlockHeight = Context.CurrentHeight,
                 PlayId = Context.OriginTransactionId,
                 PlayTime = Context.CurrentBlockTime,
                 PlayerAddress = Context.Sender,
-                ExpectedBlockHeight = expectedBlockHeight
+                DiceCount = input.DiceCount == 0 ? 1 : input.DiceCount
             };
-            State.BoutInformation[Context.OriginTransactionId] = boutInformation;
-            Context.Fire(new Played()
+            if (input.ExecuteBingo)
             {
-                PlayBlockHeight = boutInformation.PlayBlockHeight,
-                PlayId = boutInformation.PlayId,
-                PlayerAddress = boutInformation.PlayerAddress
-            });
-            return new PlayOutput { ExpectedBlockHeight = expectedBlockHeight };
+                var randomHash = State.ConsensusContract.GetRandomHash.Call(new Int64Value
+                {
+                    Value = Context.CurrentHeight
+                });
+                boutInformation.ExpectedBlockHeight = Context.CurrentHeight;
+                Assert(randomHash != null && !randomHash.Value.IsNullOrEmpty(),
+                    "Still preparing your game result, please wait for a while :)");
+                var playerInformation = State.PlayerInformation[Context.Sender];
+                SetBoutInformationBingoInfo(boutInformation.PlayId, randomHash, playerInformation, boutInformation);
+                SetPlayerInformation(playerInformation, boutInformation);
+                Context.Fire(new Bingoed
+                {
+                    PlayBlockHeight = boutInformation.PlayBlockHeight,
+                    GridType = boutInformation.GridType,
+                    GridNum = boutInformation.GridNum,
+                    Score = boutInformation.Score,
+                    IsComplete = boutInformation.IsComplete,
+                    PlayId = boutInformation.PlayId,
+                    BingoBlockHeight = boutInformation.BingoBlockHeight,
+                    PlayerAddress = boutInformation.PlayerAddress
+                });
+            }
+            else
+            {
+                var expectedBlockHeight = Context.CurrentHeight.Add(BeangoTownContractConstants.BingoBlockHeight);
+                boutInformation.ExpectedBlockHeight = expectedBlockHeight;
+                State.BoutInformation[Context.OriginTransactionId] = boutInformation;
+                Context.Fire(new Played()
+                {
+                    PlayBlockHeight = boutInformation.PlayBlockHeight,
+                    PlayId = boutInformation.PlayId,
+                    PlayerAddress = boutInformation.PlayerAddress
+                });
+            }
+
+            return new PlayOutput { ExpectedBlockHeight = boutInformation.ExpectedBlockHeight };
         }
 
         public override Empty Bingo(Hash input)
@@ -115,9 +147,26 @@ namespace Contracts.BeangoTownContract
             return new Empty();
         }
 
+        private List<int> GetDices(Hash hashValue, int diceCount)
+        {
+            var hexString = hashValue.ToHex();
+            var dices = new List<int>();
+
+            for (int i = 0; i < diceCount; i++)
+            {
+                var startIndex = i * 8;
+                var intValue = int.Parse(hexString.Substring(startIndex, 8),
+                    System.Globalization.NumberStyles.HexNumber);
+                var dice = (intValue % 6 + 5) % 6 + 1;
+                dices.Add(dice);
+            }
+
+            return dices;
+        }
+
         private void SetPlayerInformation(PlayerInformation playerInformation, BoutInformation boutInformation)
         {
-            playerInformation.CurGridNum = GetPlayerCurGridNum(playerInformation.CurGridNum, boutInformation.GridNum);
+            playerInformation.CurGridNum = boutInformation.EndGridNum;
             playerInformation.SumScore = playerInformation.SumScore.Add(boutInformation.Score);
             State.PlayerInformation[boutInformation.PlayerAddress] = playerInformation;
         }
@@ -131,18 +180,23 @@ namespace Contracts.BeangoTownContract
         private void SetBoutInformationBingoInfo(Hash playId, Hash randomHash, PlayerInformation playerInformation,
             BoutInformation boutInformation)
         {
-            var randomNum = Convert.ToInt32(Math.Abs(randomHash.ToInt64() % 6) + 1);
+            var usefulHash = HashHelper.XorAndCompute(randomHash, playId);
+            var dices = GetDices(usefulHash, boutInformation.DiceCount);
+            var randomNum = dices.Sum();
             var curGridNum = GetPlayerCurGridNum(playerInformation.CurGridNum, randomNum);
             var gridType = State.GridTypeList.Value.Value[curGridNum];
-            boutInformation.Score = GetScoreByGridType(playId, gridType, randomHash);
-            boutInformation.IsComplete = true;
+            boutInformation.Score = GetScoreByGridType(gridType, usefulHash);
+            boutInformation.DiceNumbers.AddRange(dices);
             boutInformation.GridNum = randomNum;
+            boutInformation.StartGridNum = playerInformation.CurGridNum;
+            boutInformation.EndGridNum = curGridNum;
+            boutInformation.IsComplete = true;
             boutInformation.GridType = gridType;
             boutInformation.BingoBlockHeight = Context.CurrentHeight;
             State.BoutInformation[playId] = boutInformation;
         }
 
-        private Int32 GetScoreByGridType(Hash playId, GridType gridType, Hash randomHash)
+        private Int32 GetScoreByGridType(GridType gridType, Hash usefulHash)
         {
             int score;
             if (gridType == GridType.Blue)
@@ -155,8 +209,7 @@ namespace Contracts.BeangoTownContract
             }
             else
             {
-                var scoreHash = HashHelper.ConcatAndCompute(randomHash, playId);
-                score = Convert.ToInt32(Math.Abs(scoreHash.ToInt64() % 21) + 30);
+                score = Convert.ToInt32(Math.Abs(usefulHash.ToInt64() % 21) + 30);
             }
 
             return score;

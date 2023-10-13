@@ -37,6 +37,7 @@ service BeangoTownContract {
     }
     rpc Bingo (aelf.Hash) returns (google.protobuf.Empty) {
     }
+
     rpc SetGameLimitSettings (GameLimitSettings) returns (google.protobuf.Empty) {
     }
     rpc Initialize (google.protobuf.Empty) returns (google.protobuf.Empty) {
@@ -61,13 +62,17 @@ service BeangoTownContract {
     }
 
     rpc GetGameLimitSettings (google.protobuf.Empty) returns (GameLimitSettings) {
-       option (aelf.is_view) = true;
+        option (aelf.is_view) = true;
     }
-   
+
+
+
 }
 
 message PlayInput {
     bool reset_start = 1;
+    int32 dice_count = 2;
+    bool execute_bingo = 3;
 }
 message PlayOutput {
     int64 expected_block_height = 1;
@@ -97,6 +102,10 @@ message BoutInformation {
     google.protobuf.Timestamp play_time = 8;
     aelf.Address player_address = 9;
     int64 expected_block_height = 10;
+    int32 dice_count = 11;
+    repeated int32 dice_numbers = 12;
+    int32 start_grid_num = 13;
+    int32 end_grid_num = 14;
 }
 
 message GameLimitSettings {
