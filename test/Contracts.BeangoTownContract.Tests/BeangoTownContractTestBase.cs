@@ -45,7 +45,7 @@ namespace Contracts.BeangoTownContract
 
             AsyncHelper.RunSync(() => CreateNftAsync(TokenContractStub, new CreateInput()
             {
-                Symbol = BeangoTownContractConstants.BeanPassSymbol,
+                Symbol = BeangoTownContractConstants.HalloweenBeanPassSymbol,
                 TokenName = "BeanPassSymbol",
                 TotalSupply = 100,
                 Decimals = 0,

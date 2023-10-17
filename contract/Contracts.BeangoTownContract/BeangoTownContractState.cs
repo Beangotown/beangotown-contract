@@ -13,8 +13,10 @@ public partial class BeangoTownContractState : ContractState
 
     public SingletonState<Address> Admin { get; set; }
     public SingletonState<GameLimitSettings> GameLimitSettings { get; set; }
+    public SingletonState<GameRules> GameRules { get; set; }
     public SingletonState<GridTypeList> GridTypeList { get; set; }
     public MappedState<Address, PlayerInformation> PlayerInformation { get; set; }
 
     public MappedState<Hash, BoutInformation> BoutInformation { get; set; }
+   
 }

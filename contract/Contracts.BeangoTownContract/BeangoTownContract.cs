@@ -49,12 +49,7 @@ namespace Contracts.BeangoTownContract
 
         private void InitPlayerInfo(bool resetStart)
         {
-            var getBalanceOutput = State.TokenContract.GetBalance.Call(new GetBalanceInput
-            {
-                Symbol = BeangoTownContractConstants.BeanPassSymbol,
-                Owner = Context.Sender,
-            });
-            Assert(getBalanceOutput.Balance > 0, "BeanPass Balance is not enough");
+            Assert(CheckBeanPass(Context.Sender).Value, "BeanPass Balance is not enough");
             var playerInformation = GetCurrentPlayerInformation(Context.Sender, true);
             Assert(playerInformation.PlayableCount > 0, "PlayableCount is not enough");
             if (resetStart)
@@ -209,7 +204,20 @@ namespace Contracts.BeangoTownContract
             }
             else
             {
-                score = Convert.ToInt32(Math.Abs(usefulHash.ToInt64() % 21) + 30);
+                var gameRules = State.GameRules.Value;
+                var minScore = 30;
+                var maxScore = 50;
+                if (gameRules != null)
+                {
+                    if (Context.CurrentBlockTime.CompareTo(gameRules.BeginTime) >= 0 &&
+                        Context.CurrentBlockTime.CompareTo(gameRules.EndTime) <= 0)
+                    {
+                        minScore = gameRules.MinScore;
+                        maxScore = gameRules.MaxScore;
+                    }
+                }
+
+                score = Convert.ToInt32(Math.Abs(usefulHash.ToInt64() % (maxScore - minScore + 1)) + minScore);
             }
 
             return score;
@@ -239,6 +247,16 @@ namespace Contracts.BeangoTownContract
             var getBalanceOutput = State.TokenContract.GetBalance.Call(new GetBalanceInput
             {
                 Symbol = BeangoTownContractConstants.BeanPassSymbol,
+                Owner = owner
+            });
+            if (getBalanceOutput.Balance > 0)
+            {
+                return new BoolValue { Value = true };
+            }
+
+            getBalanceOutput = State.TokenContract.GetBalance.Call(new GetBalanceInput
+            {
+                Symbol = BeangoTownContractConstants.HalloweenBeanPassSymbol,
                 Owner = owner
             });
             return new BoolValue { Value = getBalanceOutput.Balance > 0 };
@@ -275,14 +293,7 @@ namespace Contracts.BeangoTownContract
 
         public override PlayerInformation GetPlayerInformation(Address owner)
         {
-            var getBalanceOutput = State.TokenContract.GetBalance.Call(new GetBalanceInput
-            {
-                Symbol = BeangoTownContractConstants.BeanPassSymbol,
-                Owner = owner,
-            });
-            var nftEnough = getBalanceOutput.Balance > 0;
-
-            var playerInformation = GetCurrentPlayerInformation(owner, nftEnough);
+            var playerInformation = GetCurrentPlayerInformation(owner, CheckBeanPass(owner).Value);
             return playerInformation;
         }
 
@@ -339,6 +350,23 @@ namespace Contracts.BeangoTownContract
                 "Invalid dailyPlayCountResetHours.");
             Assert(input.DailyMaxPlayCount >= 0, "Invalid dailyMaxPlayCount.");
             State.GameLimitSettings.Value = input;
+            return new Empty();
+        }
+
+        public override GameRules GetGameRules(Empty input)
+        {
+            return State.GameRules.Value;
+        }
+
+        public override Empty SetGameRules(GameRules input)
+        {
+            Assert(State.Admin.Value == Context.Sender, "No permission.");
+            Assert(input.BeginTime.CompareTo(input.EndTime) < 0,
+                "Invalid EndTime.");
+            Assert(input.MinScore > 0, "Invalid MinScore.");
+            Assert(input.MaxScore >= input.MinScore, "Invalid MaxScore.");
+
+            State.GameRules.Value = input;
             return new Empty();
         }
     }

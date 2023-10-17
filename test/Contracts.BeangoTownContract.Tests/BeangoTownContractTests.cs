@@ -1,7 +1,9 @@
+using System;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Contracts.MultiToken;
 using AElf.Types;
+using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Shouldly;
 using Xunit;
@@ -222,7 +224,7 @@ namespace Contracts.BeangoTownContract
         private async Task PlayInitAsync(){
             await TokenContractStub.Issue.SendAsync( new IssueInput
             {
-                Symbol = BeangoTownContractConstants.BeanPassSymbol,
+                Symbol = BeangoTownContractConstants.HalloweenBeanPassSymbol,
                 Amount = 1,
                 Memo = "ddd",
                 To = DefaultAddress
@@ -280,11 +282,72 @@ namespace Contracts.BeangoTownContract
             }
             else
             {
-                boutInformation.Score.ShouldBeInRange(20, 50);
+                var gameRules = await BeangoTownContractStub.GetGameRules.CallAsync(new Empty());
+                var minScore = 30;
+                var maxScore = 50;
+                if (gameRules != null)
+                {
+                    if (DateTime.UtcNow.ToTimestamp().CompareTo(gameRules.BeginTime) >= 0 &&
+                        DateTime.UtcNow.ToTimestamp().CompareTo(gameRules.EndTime) <= 0)
+                    {
+                        minScore = gameRules.MinScore;
+                        maxScore = gameRules.MaxScore;
+                    }
+                }
+
+                boutInformation.Score.ShouldBeInRange(minScore, maxScore);
             }
 
             boutInformation.IsComplete.ShouldBe(true);
             return boutInformation;
         }
+
+        [Fact]
+        public async Task SetGameRules_Test()
+        {
+            var result = await UserStub.SetGameRules.SendWithExceptionAsync(new GameRules()
+            {
+                BeginTime = DateTime.UtcNow.AddDays(-1).ToTimestamp(),
+                EndTime = DateTime.UtcNow.AddDays(2).ToTimestamp(),
+                MinScore = 1,
+                MaxScore = 10
+            });
+
+            result.TransactionResult.Error.ShouldContain("No permission");
+            result = await BeangoTownContractStub.SetGameRules.SendWithExceptionAsync(new GameRules()
+            {
+                BeginTime = DateTime.UtcNow.AddDays(2).ToTimestamp(),
+                EndTime = DateTime.UtcNow.AddDays(1).ToTimestamp(),
+                MinScore = 1,
+                MaxScore = 10
+            });
+            result.TransactionResult.Error.ShouldContain("Invalid EndTime");
+            result = await BeangoTownContractStub.SetGameRules.SendWithExceptionAsync(new GameRules()
+            {
+                BeginTime = DateTime.UtcNow.AddDays(-1).ToTimestamp(),
+                EndTime = DateTime.UtcNow.AddDays(2).ToTimestamp(),
+                MinScore = 0,
+                MaxScore = 10
+            });
+            result.TransactionResult.Error.ShouldContain("Invalid MinScore");
+            result = await BeangoTownContractStub.SetGameRules.SendWithExceptionAsync(new GameRules()
+            {
+                BeginTime = DateTime.UtcNow.AddDays(-1).ToTimestamp(),
+                EndTime = DateTime.UtcNow.AddDays(2).ToTimestamp(),
+                MinScore = 10,
+                MaxScore = 1
+            });
+            result.TransactionResult.Error.ShouldContain("Invalid MaxScore");
+            result = await BeangoTownContractStub.SetGameRules.SendAsync(new GameRules()
+            {
+                BeginTime = DateTime.UtcNow.AddDays(-1).ToTimestamp(),
+                EndTime = DateTime.UtcNow.AddDays(2).ToTimestamp(),
+                MinScore = 1,
+                MaxScore = 10
+            });
+            result.TransactionResult.TransactionId.ShouldNotBeNull();
+            await PlayNewTests();
+        }
+       
     }
 }
