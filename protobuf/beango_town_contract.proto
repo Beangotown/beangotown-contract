@@ -44,6 +44,9 @@ service BeangoTownContract {
     }
     rpc ChangeAdmin (aelf.Address) returns (google.protobuf.Empty) {
     }
+    rpc SetGameRules (GameRules) returns (google.protobuf.Empty) {
+    }
+
 
     // Views
     rpc CheckBeanPass (aelf.Address) returns (google.protobuf.BoolValue) {
@@ -52,7 +55,7 @@ service BeangoTownContract {
     rpc GetPlayerInformation (aelf.Address) returns (PlayerInformation) {
         option (aelf.is_view) = true;
     }
-    
+
     rpc GetBoutInformation (GetBoutInformationInput) returns (BoutInformation) {
         option (aelf.is_view) = true;
     }
@@ -65,6 +68,9 @@ service BeangoTownContract {
         option (aelf.is_view) = true;
     }
 
+    rpc GetGameRules (google.protobuf.Empty) returns (GameRules) {
+        option (aelf.is_view) = true;
+    }
 
 
 }
@@ -109,15 +115,23 @@ message BoutInformation {
 }
 
 message GameLimitSettings {
-    int32  daily_max_play_count = 1;
-    int32  daily_play_count_reset_hours = 2;
+    int32 daily_max_play_count = 1;
+    int32 daily_play_count_reset_hours = 2;
+}
+
+
+message GameRules {
+    google.protobuf.Timestamp begin_time = 1;
+    google.protobuf.Timestamp end_time = 2;
+    int32 min_score = 3;
+    int32 max_score = 4;
 }
 
 
 enum GridType {
     Blue = 0;
     Red = 1;
-    Gold =2;
+    Gold = 2;
 }
 
 message GridTypeList {
