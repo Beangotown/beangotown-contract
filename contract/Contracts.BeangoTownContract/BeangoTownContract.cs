@@ -94,7 +94,10 @@ namespace Contracts.BeangoTownContract
                     IsComplete = boutInformation.IsComplete,
                     PlayId = boutInformation.PlayId,
                     BingoBlockHeight = boutInformation.BingoBlockHeight,
-                    PlayerAddress = boutInformation.PlayerAddress
+                    DiceCount = boutInformation.DiceCount,
+                    DiceNumbers = boutInformation.DiceNumbers.ToString(),
+                    StartGridNum = boutInformation.StartGridNum,
+                    EndGridNum = boutInformation.EndGridNum,
                 });
             }
             else
