@@ -138,6 +138,9 @@ message GridTypeList {
     // The gridType list.
     repeated GridType value = 1;
 }
+message DiceList {
+    repeated int32 value = 1;
+}
 
 // LogEvent
 
@@ -158,7 +161,7 @@ message Bingoed {
     int64 bingo_block_height = 7;
     aelf.Address player_address = 8;
     int32 dice_count = 9;
-    string dice_numbers = 10;
+    DiceList dice_numbers = 10;
     int32 start_grid_num = 11;
     int32 end_grid_num = 12;
 }
