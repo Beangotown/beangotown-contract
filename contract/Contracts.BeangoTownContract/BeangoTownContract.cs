@@ -7,6 +7,7 @@ using AElf.CSharp.Core;
 using AElf.CSharp.Core.Extension;
 using AElf.Sdk.CSharp;
 using AElf.Types;
+using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
 
 namespace Contracts.BeangoTownContract
@@ -93,8 +94,15 @@ namespace Contracts.BeangoTownContract
                     Score = boutInformation.Score,
                     IsComplete = boutInformation.IsComplete,
                     PlayId = boutInformation.PlayId,
+                    PlayerAddress = boutInformation.PlayerAddress,
                     BingoBlockHeight = boutInformation.BingoBlockHeight,
-                    PlayerAddress = boutInformation.PlayerAddress
+                    DiceCount = boutInformation.DiceCount,
+                    DiceNumbers = new DiceList()
+                    {
+                        Value = { boutInformation.DiceNumbers }
+                    },
+                    StartGridNum = boutInformation.StartGridNum,
+                    EndGridNum = boutInformation.EndGridNum,
                 });
             }
             else
