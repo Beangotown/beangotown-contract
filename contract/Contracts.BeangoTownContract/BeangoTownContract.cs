@@ -94,6 +94,7 @@ namespace Contracts.BeangoTownContract
                     Score = boutInformation.Score,
                     IsComplete = boutInformation.IsComplete,
                     PlayId = boutInformation.PlayId,
+                    PlayerAddress = boutInformation.PlayerAddress,
                     BingoBlockHeight = boutInformation.BingoBlockHeight,
                     DiceCount = boutInformation.DiceCount,
                     DiceNumbers = new DiceList()
