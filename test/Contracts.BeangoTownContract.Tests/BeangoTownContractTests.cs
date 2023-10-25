@@ -1,7 +1,9 @@
+using System;
 using System.Threading.Tasks;
 using AElf;
 using AElf.Contracts.MultiToken;
 using AElf.Types;
+using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Shouldly;
 using Xunit;
@@ -77,18 +79,13 @@ namespace Contracts.BeangoTownContract
         private async Task<BoutInformation> BingoTest( )
         {
             var id = await PlayAsync(false);
-            for (var i = 0; i < 7; i++)
-            {
-                await BeangoTownContractStub.Bingo.SendWithExceptionAsync(id);
-            }
-
             await BeangoTownContractStub.Bingo.SendAsync(id);
             var boutInformation = await BeangoTownContractStub.GetBoutInformation.CallAsync(new GetBoutInformationInput
             {
                 PlayId = id
             });
             boutInformation.BingoBlockHeight.ShouldNotBeNull();
-            boutInformation.GridNum.ShouldBeInRange(1, 6);
+            boutInformation.GridNum.ShouldBeInRange(1, 18);
             if (boutInformation.GridType == GridType.Blue)
             {
                 boutInformation.Score.ShouldBe(1);
@@ -109,7 +106,9 @@ namespace Contracts.BeangoTownContract
         {
             var tx = await BeangoTownContractStub.Play.SendAsync(new PlayInput
             {
-                ResetStart = resetStart
+                ResetStart = resetStart,
+                DiceCount = 3
+                
             });
             return tx.TransactionResult.TransactionId;
         }
@@ -124,8 +123,6 @@ namespace Contracts.BeangoTownContract
             inputCheckResult.TransactionResult.Error.ShouldContain("Invalid playId");
             var userCheckResult  = await UserStub.Bingo.SendWithExceptionAsync(id);
             userCheckResult.TransactionResult.Error.ShouldContain("not Login before");
-            var heightCheckResult =  await BeangoTownContractStub.Bingo.SendWithExceptionAsync(id);
-            heightCheckResult.TransactionResult.Error.ShouldContain("Invalid target height.");
             var boutInformation = await BingoTest();
             var repeatCheckRe =  await BeangoTownContractStub.Bingo.SendWithExceptionAsync(boutInformation.PlayId);
             repeatCheckRe.TransactionResult.Error.ShouldContain("Bout already finished");
@@ -227,7 +224,7 @@ namespace Contracts.BeangoTownContract
         private async Task PlayInitAsync(){
             await TokenContractStub.Issue.SendAsync( new IssueInput
             {
-                Symbol = BeangoTownContractConstants.BeanPassSymbol,
+                Symbol = BeangoTownContractConstants.HalloweenBeanPassSymbol,
                 Amount = 1,
                 Memo = "ddd",
                 To = DefaultAddress
@@ -242,5 +239,115 @@ namespace Contracts.BeangoTownContract
            var BalanceRe = await BeangoTownContractStub.CheckBeanPass.CallAsync(DefaultAddress);
            BalanceRe.Value.ShouldBe(true);
         }
+
+        [Fact]
+        public async Task PlayNewTests()
+        {
+            await PlayInitAsync();
+            int sumScore = 0;
+            int sumGridNum = 0;
+            for (int i = 0; i < 5; i++)
+            {
+                var boutInformation = await PlayNewTest();
+                sumScore += boutInformation.Score;
+                sumGridNum = (sumGridNum + boutInformation.GridNum) % 18;
+            }
+
+            var playerInfo = await BeangoTownContractStub.GetPlayerInformation.CallAsync(DefaultAddress);
+            playerInfo.SumScore.ShouldBe(sumScore);
+            playerInfo.CurGridNum.ShouldBe(sumGridNum);
+        }
+
+        private async Task<BoutInformation> PlayNewTest()
+        {
+            var result = await BeangoTownContractStub.Play.SendAsync(new PlayInput()
+            {
+                DiceCount = 2,
+                ResetStart = false,
+                ExecuteBingo = true
+            });
+            var boutInformation = await BeangoTownContractStub.GetBoutInformation.CallAsync(new GetBoutInformationInput
+            {
+                PlayId = result.TransactionResult.TransactionId
+            });
+            boutInformation.BingoBlockHeight.ShouldNotBeNull();
+            boutInformation.GridNum.ShouldBeInRange(1, 18);
+            if (boutInformation.GridType == GridType.Blue)
+            {
+                boutInformation.Score.ShouldBe(1);
+            }
+            else if (boutInformation.GridType == GridType.Red)
+            {
+                boutInformation.Score.ShouldBe(5);
+            }
+            else
+            {
+                var gameRules = await BeangoTownContractStub.GetGameRules.CallAsync(new Empty());
+                var minScore = 30;
+                var maxScore = 50;
+                if (gameRules != null)
+                {
+                    if (DateTime.UtcNow.ToTimestamp().CompareTo(gameRules.BeginTime) >= 0 &&
+                        DateTime.UtcNow.ToTimestamp().CompareTo(gameRules.EndTime) <= 0)
+                    {
+                        minScore = gameRules.MinScore;
+                        maxScore = gameRules.MaxScore;
+                    }
+                }
+
+                boutInformation.Score.ShouldBeInRange(minScore, maxScore);
+            }
+
+            boutInformation.IsComplete.ShouldBe(true);
+            return boutInformation;
+        }
+
+        [Fact]
+        public async Task SetGameRules_Test()
+        {
+            var result = await UserStub.SetGameRules.SendWithExceptionAsync(new GameRules()
+            {
+                BeginTime = DateTime.UtcNow.AddDays(-1).ToTimestamp(),
+                EndTime = DateTime.UtcNow.AddDays(2).ToTimestamp(),
+                MinScore = 1,
+                MaxScore = 10
+            });
+
+            result.TransactionResult.Error.ShouldContain("No permission");
+            result = await BeangoTownContractStub.SetGameRules.SendWithExceptionAsync(new GameRules()
+            {
+                BeginTime = DateTime.UtcNow.AddDays(2).ToTimestamp(),
+                EndTime = DateTime.UtcNow.AddDays(1).ToTimestamp(),
+                MinScore = 1,
+                MaxScore = 10
+            });
+            result.TransactionResult.Error.ShouldContain("Invalid EndTime");
+            result = await BeangoTownContractStub.SetGameRules.SendWithExceptionAsync(new GameRules()
+            {
+                BeginTime = DateTime.UtcNow.AddDays(-1).ToTimestamp(),
+                EndTime = DateTime.UtcNow.AddDays(2).ToTimestamp(),
+                MinScore = 0,
+                MaxScore = 10
+            });
+            result.TransactionResult.Error.ShouldContain("Invalid MinScore");
+            result = await BeangoTownContractStub.SetGameRules.SendWithExceptionAsync(new GameRules()
+            {
+                BeginTime = DateTime.UtcNow.AddDays(-1).ToTimestamp(),
+                EndTime = DateTime.UtcNow.AddDays(2).ToTimestamp(),
+                MinScore = 10,
+                MaxScore = 1
+            });
+            result.TransactionResult.Error.ShouldContain("Invalid MaxScore");
+            result = await BeangoTownContractStub.SetGameRules.SendAsync(new GameRules()
+            {
+                BeginTime = DateTime.UtcNow.AddDays(-1).ToTimestamp(),
+                EndTime = DateTime.UtcNow.AddDays(2).ToTimestamp(),
+                MinScore = 1,
+                MaxScore = 10
+            });
+            result.TransactionResult.TransactionId.ShouldNotBeNull();
+            await PlayNewTests();
+        }
+       
     }
 }

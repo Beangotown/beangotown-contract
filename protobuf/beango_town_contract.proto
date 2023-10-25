@@ -37,12 +37,16 @@ service BeangoTownContract {
     }
     rpc Bingo (aelf.Hash) returns (google.protobuf.Empty) {
     }
+
     rpc SetGameLimitSettings (GameLimitSettings) returns (google.protobuf.Empty) {
     }
     rpc Initialize (google.protobuf.Empty) returns (google.protobuf.Empty) {
     }
     rpc ChangeAdmin (aelf.Address) returns (google.protobuf.Empty) {
     }
+    rpc SetGameRules (GameRules) returns (google.protobuf.Empty) {
+    }
+
 
     // Views
     rpc CheckBeanPass (aelf.Address) returns (google.protobuf.BoolValue) {
@@ -51,7 +55,7 @@ service BeangoTownContract {
     rpc GetPlayerInformation (aelf.Address) returns (PlayerInformation) {
         option (aelf.is_view) = true;
     }
-    
+
     rpc GetBoutInformation (GetBoutInformationInput) returns (BoutInformation) {
         option (aelf.is_view) = true;
     }
@@ -61,13 +65,20 @@ service BeangoTownContract {
     }
 
     rpc GetGameLimitSettings (google.protobuf.Empty) returns (GameLimitSettings) {
-       option (aelf.is_view) = true;
+        option (aelf.is_view) = true;
     }
-   
+
+    rpc GetGameRules (google.protobuf.Empty) returns (GameRules) {
+        option (aelf.is_view) = true;
+    }
+
+
 }
 
 message PlayInput {
     bool reset_start = 1;
+    int32 dice_count = 2;
+    bool execute_bingo = 3;
 }
 message PlayOutput {
     int64 expected_block_height = 1;
@@ -97,23 +108,38 @@ message BoutInformation {
     google.protobuf.Timestamp play_time = 8;
     aelf.Address player_address = 9;
     int64 expected_block_height = 10;
+    int32 dice_count = 11;
+    repeated int32 dice_numbers = 12;
+    int32 start_grid_num = 13;
+    int32 end_grid_num = 14;
 }
 
 message GameLimitSettings {
-    int32  daily_max_play_count = 1;
-    int32  daily_play_count_reset_hours = 2;
+    int32 daily_max_play_count = 1;
+    int32 daily_play_count_reset_hours = 2;
+}
+
+
+message GameRules {
+    google.protobuf.Timestamp begin_time = 1;
+    google.protobuf.Timestamp end_time = 2;
+    int32 min_score = 3;
+    int32 max_score = 4;
 }
 
 
 enum GridType {
     Blue = 0;
     Red = 1;
-    Gold =2;
+    Gold = 2;
 }
 
 message GridTypeList {
     // The gridType list.
     repeated GridType value = 1;
+}
+message DiceList {
+    repeated int32 value = 1;
 }
 
 // LogEvent
@@ -134,6 +160,10 @@ message Bingoed {
     aelf.Hash play_id = 6;
     int64 bingo_block_height = 7;
     aelf.Address player_address = 8;
+    int32 dice_count = 9;
+    DiceList dice_numbers = 10;
+    int32 start_grid_num = 11;
+    int32 end_grid_num = 12;
 }
 
 
