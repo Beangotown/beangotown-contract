@@ -320,6 +320,7 @@ namespace Contracts.BeangoTownContract
 
             var gameLimitSettings = State.GameLimitSettings.Value;
             playerInformation.PlayableCount = GetPlayableCount(gameLimitSettings, playerInformation, nftEnough);
+            playerInformation.BeanPassOwned = nftEnough;
             return playerInformation;
         }
 
