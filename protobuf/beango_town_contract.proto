@@ -94,6 +94,7 @@ message PlayerInformation {
     google.protobuf.Timestamp last_play_time = 3;
     int64 sum_score = 4;
     int32 cur_grid_num = 5;
+    bool bean_pass_owned = 6;
 }
 
 
