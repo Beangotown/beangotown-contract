@@ -47,6 +47,7 @@ You can easily run unit tests on  Contracts BeangoTown. Navigate to the Contract
 ```Bash
 cd ../../test/Contracts.BeangoTownContract.Tests
 dotnet test
+```
 
 ## Contributing
 
