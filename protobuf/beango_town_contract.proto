@@ -36,7 +36,7 @@ service BeangoTownContract {
     //   method Play include Bingo
     rpc Play (PlayInput) returns (PlayOutput) {
     }
-    //
+    //execute Bingo to get result when Play param execute_bingo = false 
     rpc Bingo (aelf.Hash) returns (google.protobuf.Empty) {
     }
 
