@@ -33,17 +33,22 @@ service BeangoTownContract {
     // an action defined as a gRPC service method.
     // this action take a google.protobuf.Empty (placeholder for void) as input
     // and returns a custom defined type: HelloReturn.
+    //   method Play include Bingo
     rpc Play (PlayInput) returns (PlayOutput) {
     }
+    //
     rpc Bingo (aelf.Hash) returns (google.protobuf.Empty) {
     }
 
     rpc SetGameLimitSettings (GameLimitSettings) returns (google.protobuf.Empty) {
     }
+    
     rpc Initialize (google.protobuf.Empty) returns (google.protobuf.Empty) {
     }
+    
     rpc ChangeAdmin (aelf.Address) returns (google.protobuf.Empty) {
     }
+    
     rpc SetGameRules (GameRules) returns (google.protobuf.Empty) {
     }
 
@@ -52,6 +57,7 @@ service BeangoTownContract {
     rpc CheckBeanPass (aelf.Address) returns (google.protobuf.BoolValue) {
         option (aelf.is_view) = true;
     }
+    
     rpc GetPlayerInformation (aelf.Address) returns (PlayerInformation) {
         option (aelf.is_view) = true;
     }
