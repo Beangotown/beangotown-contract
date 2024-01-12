@@ -332,7 +332,7 @@ namespace Contracts.BeangoTownContract
             var playCountResetDateTime =
                 new DateTime(now.Year, now.Month, now.Day, gameLimitSettings.DailyPlayCountResetHours, 0, 0,
                     DateTimeKind.Utc).ToTimestamp();
-            // LastPlayTime ,now must not be same DayField
+            // LastPlayTime ,CurrentTime must not be same DayField
             if (playerInformation.LastPlayTime == null || Context.CurrentBlockTime.CompareTo(
                                                            playerInformation.LastPlayTime.AddDays(1)
                                                        ) > -1
