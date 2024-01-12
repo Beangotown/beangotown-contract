@@ -1,7 +1,12 @@
 trigger:
   branches:
     include:
-      - main
+      - master
+      - dev
+pr:
+  branches:
+    include:
+      - master
       - dev
 jobs:
   - job: build_all_darwin
