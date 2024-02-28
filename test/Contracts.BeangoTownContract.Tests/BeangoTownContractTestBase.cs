@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using AElf.Boilerplate.TestBase;
 using AElf.Contracts.Consensus.AEDPoS;
@@ -22,7 +23,8 @@ namespace Contracts.BeangoTownContract
         protected Address DefaultAddress => Accounts[0].Address;
         
         protected ECKeyPair UserKeyPair => Accounts[1].KeyPair;
-        
+
+        protected int SeedNum = 1;
         public BeangoTownContractTestBase()
         {
             BeangoTownContractStub = GetBeangoTownContractStub(DefaultKeyPair);
@@ -49,6 +51,16 @@ namespace Contracts.BeangoTownContract
                 TokenName = "BeanPassSymbol",
                 TotalSupply = 100,
                 Decimals = 0,
+                Issuer = DefaultAddress,
+                IsBurnable = true,
+                Owner = DefaultAddress
+            }));
+            AsyncHelper.RunSync(() => CreateNftCollectionAsync(TokenContractStub, new CreateInput()
+            {
+                Symbol = BeangoTownContractConstants.BeanSymbol,
+                TokenName = "BeanSymbol",
+                TotalSupply = 100000000000000,
+                Decimals = 2,
                 Issuer = DefaultAddress,
                 IsBurnable = true,
                 Owner = DefaultAddress
@@ -96,7 +108,8 @@ namespace Contracts.BeangoTownContract
                 Memo = "ddd",
                 To = DefaultAddress
             });
-            await stub.Approve.SendAsync(new ApproveInput() { Spender = TokenContractAddress, Symbol = "SEED-1", Amount = 1 });
+            await stub.Approve.SendAsync(new ApproveInput()
+                { Spender = TokenContractAddress, Symbol = "SEED-" + SeedNum, Amount = 1 });
             await stub.Create.SendAsync(createInput);
             return input;
         }
@@ -110,9 +123,10 @@ namespace Contracts.BeangoTownContract
 
         internal CreateInput BuildSeedCreateInput(CreateInput createInput)
         {
+            Interlocked.Increment(ref SeedNum);
             var input = new CreateInput
             {
-                Symbol = "SEED-1",
+                Symbol = "SEED-" + SeedNum,
                 Decimals = 0,
                 IsBurnable = true,
                 TokenName = "seed token 1" ,

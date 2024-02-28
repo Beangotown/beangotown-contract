@@ -20,5 +20,12 @@ public partial class BeangoTownContractState : ContractState
 
     // PlayId => BoutInformation
     public MappedState<Hash, BoutInformation> BoutInformation { get; set; }
-   
+
+    public MappedState<Address, int, int> UserWeeklyBeans { get; set; }
+
+    public SingletonState<int> CurrentWeek { get; set; }
+
+    public SingletonState<PurchaseChanceConfig> PurchaseChanceConfig { get; set; }
+    public SingletonState<RankingRules> RankingRules { get; set; }
+
 }

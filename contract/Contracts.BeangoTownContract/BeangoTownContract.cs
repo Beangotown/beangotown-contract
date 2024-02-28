@@ -7,7 +7,6 @@ using AElf.CSharp.Core;
 using AElf.CSharp.Core.Extension;
 using AElf.Sdk.CSharp;
 using AElf.Types;
-using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
 
 namespace Contracts.BeangoTownContract
@@ -48,108 +47,155 @@ namespace Contracts.BeangoTownContract
         }
 
 
-        private void InitPlayerInfo(bool resetStart)
+        private PlayerInformation InitPlayerInfo(bool resetStart)
         {
             Assert(CheckBeanPass(Context.Sender).Value, "BeanPass Balance is not enough");
             var playerInformation = GetCurrentPlayerInformation(Context.Sender, true);
-            Assert(playerInformation.PlayableCount > 0, "PlayableCount is not enough");
+            Assert(playerInformation.PlayableCount > 0 || playerInformation.PurchasedChancesCount > 0,
+                "PlayableCount is not enough");
             if (resetStart)
             {
                 playerInformation.CurGridNum = 0;
             }
-            playerInformation.PlayableCount--;
-            playerInformation.LastPlayTime = Context.CurrentBlockTime;
-            State.PlayerInformation[Context.Sender] = playerInformation;
+
+            ReSetPlayerBeans(playerInformation);
+            return playerInformation;
+        }
+
+        private void ReSetPlayerBeans(PlayerInformation playerInformation)
+        {
+            var realBeanBalance = State.TokenContract.GetBalance.Call(new GetBalanceInput
+            {
+                Owner = Context.Sender,
+                Symbol = BeangoTownContractConstants.BeanSymbol
+            }).Balance;
+            playerInformation.TotalBeans = realBeanBalance;
+        }
+
+        private bool IsWeekRanking()
+        {
+            var rankingRules = State.RankingRules.Value;
+            if (rankingRules == null)
+            {
+                return false;
+            }
+
+            var beginWeekNum = Math.Max(State.CurrentWeek.Value - rankingRules.WeeklyTournamentBeginNum, 0);
+            var tournamentHours = rankingRules.RankingHours.Add(rankingRules.PublicityHours);
+            var beginTime = rankingRules.BeginTime.AddHours(tournamentHours.Mul(
+                beginWeekNum));
+            if (Context.CurrentBlockTime.CompareTo(beginTime) < 0)
+            {
+                return false;
+            }
+
+            var endTime = rankingRules.BeginTime.AddHours(tournamentHours.Mul(beginWeekNum + 1));
+            while (Context.CurrentBlockTime.CompareTo(endTime) > 0)
+            {
+                beginWeekNum++;
+                endTime = endTime.AddHours(tournamentHours);
+            }
+
+            State.CurrentWeek.Value = rankingRules.WeeklyTournamentBeginNum + beginWeekNum;
+            if (Context.CurrentBlockTime.CompareTo(endTime.AddHours(-rankingRules.PublicityHours)) > 0)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         public override PlayOutput Play(PlayInput input)
         {
             Assert(input.DiceCount <= 3, "Invalid diceCount");
-            InitPlayerInfo(input.ResetStart);
+            var playerInformation = InitPlayerInfo(input.ResetStart);
             var boutInformation = new BoutInformation
             {
-                PlayBlockHeight = Context.CurrentHeight,
                 PlayId = Context.OriginTransactionId,
                 PlayTime = Context.CurrentBlockTime,
                 PlayerAddress = Context.Sender,
                 DiceCount = input.DiceCount == 0 ? 1 : input.DiceCount
             };
-            if (input.ExecuteBingo)
-            {
-                var randomHash = State.ConsensusContract.GetRandomHash.Call(new Int64Value
-                {
-                    Value = Context.CurrentHeight
-                });
-                boutInformation.ExpectedBlockHeight = Context.CurrentHeight;
-                Assert(randomHash != null && !randomHash.Value.IsNullOrEmpty(),
-                    "Still preparing your game result, please wait for a while :)");
-                var playerInformation = State.PlayerInformation[Context.Sender];
-                SetBoutInformationBingoInfo(boutInformation.PlayId, randomHash, playerInformation, boutInformation);
-                SetPlayerInformation(playerInformation, boutInformation);
-                Context.Fire(new Bingoed
-                {
-                    PlayBlockHeight = boutInformation.PlayBlockHeight,
-                    GridType = boutInformation.GridType,
-                    GridNum = boutInformation.GridNum,
-                    Score = boutInformation.Score,
-                    IsComplete = boutInformation.IsComplete,
-                    PlayId = boutInformation.PlayId,
-                    PlayerAddress = boutInformation.PlayerAddress,
-                    BingoBlockHeight = boutInformation.BingoBlockHeight,
-                    DiceCount = boutInformation.DiceCount,
-                    DiceNumbers = new DiceList()
-                    {
-                        Value = { boutInformation.DiceNumbers }
-                    },
-                    StartGridNum = boutInformation.StartGridNum,
-                    EndGridNum = boutInformation.EndGridNum,
-                });
-            }
-            else
-            {
-                var expectedBlockHeight = Context.CurrentHeight.Add(BeangoTownContractConstants.BingoBlockHeight);
-                boutInformation.ExpectedBlockHeight = expectedBlockHeight;
-                State.BoutInformation[Context.OriginTransactionId] = boutInformation;
-                Context.Fire(new Played()
-                {
-                    PlayBlockHeight = boutInformation.PlayBlockHeight,
-                    PlayId = boutInformation.PlayId,
-                    PlayerAddress = boutInformation.PlayerAddress
-                });
-            }
-
-            return new PlayOutput { ExpectedBlockHeight = boutInformation.ExpectedBlockHeight };
-        }
-
-        public override Empty Bingo(Hash input)
-        {
-            Context.LogDebug(() => $"Getting game result of play id: {input.ToHex()}");
-
-            CheckBingo(input, out var playerInformation, out var boutInformation, out var targetHeight);
             var randomHash = State.ConsensusContract.GetRandomHash.Call(new Int64Value
             {
-                Value = targetHeight
+                Value = Context.CurrentHeight
             });
-
             Assert(randomHash != null && !randomHash.Value.IsNullOrEmpty(),
                 "Still preparing your game result, please wait for a while :)");
-
-            SetBoutInformationBingoInfo(input, randomHash, playerInformation, boutInformation);
+            SetBoutInformationBingoInfo(boutInformation.PlayId, randomHash, playerInformation, boutInformation);
             SetPlayerInformation(playerInformation, boutInformation);
+            State.TokenContract.Transfer.Send(new TransferInput
+            {
+                To = Context.Sender,
+                Symbol = BeangoTownContractConstants.BeanSymbol,
+                Amount = boutInformation.Score
+            });
             Context.Fire(new Bingoed
             {
-                PlayBlockHeight = boutInformation.PlayBlockHeight,
                 GridType = boutInformation.GridType,
                 GridNum = boutInformation.GridNum,
                 Score = boutInformation.Score,
-                IsComplete = boutInformation.IsComplete,
-                PlayId = boutInformation.PlayId,
+                PlayerAddress = boutInformation.PlayerAddress,
                 BingoBlockHeight = boutInformation.BingoBlockHeight,
-                PlayerAddress = boutInformation.PlayerAddress
+                DiceCount = boutInformation.DiceCount,
+                DiceNumbers = new DiceList()
+                {
+                    Value =
+                    {
+                        boutInformation.DiceNumbers
+                    }
+                },
+                StartGridNum = boutInformation.StartGridNum,
+                EndGridNum = boutInformation.EndGridNum,
+                WeeklyBeans = playerInformation.WeeklyBeans,
+                TotalBeans = playerInformation.TotalBeans,
+                TotalChance = playerInformation.PurchasedChancesCount
+            });
+            return new PlayOutput { ExpectedBlockHeight = 0 };
+        }
+
+
+        public override Empty PurchaseChance(Int32Value input)
+        {
+            var beansAmount = State.PurchaseChanceConfig.Value.BeansAmount;
+            Assert(beansAmount > 0, "PurchaseChance is not allowed");
+            var playerInformation = InitPlayerInfo(false);
+            ReSetPlayerBeans(playerInformation);
+            Assert(playerInformation.TotalBeans >= input.Value * beansAmount, "Bean is not enough");
+
+            if (IsWeekRanking())
+            {
+                var currentWeek = State.CurrentWeek.Value;
+                var realWeeklyBeans =
+                    Math.Min(playerInformation.TotalBeans, State.UserWeeklyBeans[Context.Sender][currentWeek]);
+                playerInformation.WeeklyBeans = realWeeklyBeans > input.Value * beansAmount
+                    ? realWeeklyBeans.Sub(input.Value * beansAmount)
+                    : 0;
+                State.UserWeeklyBeans[Context.Sender][currentWeek] = (int)playerInformation.WeeklyBeans;
+            }
+
+            playerInformation.TotalBeans -= input.Value * beansAmount;
+            playerInformation.PurchasedChancesCount += input.Value;
+            State.PlayerInformation[Context.Sender] = playerInformation;
+            State.TokenContract.TransferFrom.Send(new TransferFromInput
+            {
+                From = Context.Sender,
+                To = Context.Self,
+                Amount = input.Value * beansAmount,
+                Symbol = BeangoTownContractConstants.BeanSymbol,
+                Memo = "PurchaseChance"
+            });
+            Context.Fire(new PurchasedChance
+            {
+                PlayerAddress = Context.Sender,
+                BeansAmount = input.Value * beansAmount,
+                ChanceCount = input.Value,
+                WeeklyBeans = playerInformation.WeeklyBeans,
+                TotalBeans = playerInformation.TotalBeans,
+                TotalChance = playerInformation.PurchasedChancesCount
             });
             return new Empty();
         }
-
         private List<int> GetDices(Hash hashValue, int diceCount)
         {
             var hexString = hashValue.ToHex();
@@ -169,8 +215,27 @@ namespace Contracts.BeangoTownContract
 
         private void SetPlayerInformation(PlayerInformation playerInformation, BoutInformation boutInformation)
         {
+            if (playerInformation.PlayableCount > 0)
+            {
+                playerInformation.PlayableCount--;
+            }
+            else
+            {
+                playerInformation.PurchasedChancesCount--;
+            }
+
+            playerInformation.LastPlayTime = Context.CurrentBlockTime;
             playerInformation.CurGridNum = boutInformation.EndGridNum;
-            playerInformation.SumScore = playerInformation.SumScore.Add(boutInformation.Score);
+            if (IsWeekRanking())
+            {
+                var currentWeek = State.CurrentWeek.Value;
+                var realWeeklyBeans = (int)
+                    Math.Min(playerInformation.TotalBeans, State.UserWeeklyBeans[Context.Sender][currentWeek]);
+                playerInformation.WeeklyBeans = realWeeklyBeans.Add(boutInformation.Score);
+                State.UserWeeklyBeans[Context.Sender][currentWeek] = (int)playerInformation.WeeklyBeans;
+            }
+
+            playerInformation.TotalBeans = playerInformation.TotalBeans.Add(boutInformation.Score);
             State.PlayerInformation[boutInformation.PlayerAddress] = playerInformation;
         }
 
@@ -193,7 +258,6 @@ namespace Contracts.BeangoTownContract
             boutInformation.GridNum = randomNum;
             boutInformation.StartGridNum = playerInformation.CurGridNum;
             boutInformation.EndGridNum = curGridNum;
-            boutInformation.IsComplete = true;
             boutInformation.GridType = gridType;
             boutInformation.BingoBlockHeight = Context.CurrentHeight;
             State.BoutInformation[playId] = boutInformation;
@@ -229,25 +293,6 @@ namespace Contracts.BeangoTownContract
             }
 
             return score;
-        }
-
-        private void CheckBingo(Hash playId, out PlayerInformation playerInformation,
-            out BoutInformation boutInformation, out long targetHeight)
-        {
-            Assert(playId != null && !playId.Value.IsNullOrEmpty(), "Invalid playId.");
-
-            playerInformation = State.PlayerInformation[Context.Sender];
-
-            Assert(playerInformation != null, $"User {Context.Sender} not Login before.");
-
-            boutInformation = State.BoutInformation[playId];
-
-            Assert(boutInformation != null, "Bout not found.");
-
-            Assert(!boutInformation!.IsComplete, "Bout already finished.");
-
-            targetHeight = boutInformation.PlayBlockHeight.Add(BeangoTownContractConstants.BingoBlockHeight);
-            Assert(targetHeight <= Context.CurrentHeight, "Invalid target height.");
         }
 
         public override BoolValue CheckBeanPass(Address owner)
@@ -313,7 +358,6 @@ namespace Contracts.BeangoTownContract
                 playerInformation = new PlayerInformation
                 {
                     PlayerAddress = playerAddress,
-                    SumScore = 0,
                     CurGridNum = 0
                 };
             }
@@ -377,6 +421,36 @@ namespace Contracts.BeangoTownContract
 
             State.GameRules.Value = input;
             return new Empty();
+        }
+
+        public override Empty SetPurchaseChanceConfig(PurchaseChanceConfig input)
+        {
+            Assert(State.Admin.Value == Context.Sender, "No permission.");
+            Assert(input.BeansAmount > 0, "Invalid BeansAmount.");
+            State.PurchaseChanceConfig.Value = input;
+            return new Empty();
+        }
+
+        public override PurchaseChanceConfig GetPurchaseChanceConfig(Empty input)
+        {
+            return State.PurchaseChanceConfig.Value;
+        }
+
+        public override Empty SetRankingRules(RankingRules rankingRules)
+        {
+            Assert(State.Admin.Value == Context.Sender, "No permission.");
+            Assert(rankingRules.WeeklyTournamentBeginNum > 0, "Invalid WeeklyTournamentBeginNum.");
+            Assert(rankingRules.RankingHours > 0, "Invalid RankingHours.");
+            Assert(rankingRules.RankingPlayerCount > 0, "Invalid RankingPlayerCount.");
+            Assert(rankingRules.PublicityPlayerCount > 0, "Invalid PublicityPlayerCount.");
+
+            State.RankingRules.Value = rankingRules;
+            return new Empty();
+        }
+
+        public override RankingRules GetRankingRules(Empty input)
+        {
+            return State.RankingRules.Value;
         }
     }
 }
